@@ -1,0 +1,626 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"my-go-backend/post_service/external"
+	"my-go-backend/post_service/internal/contextkeys"
+	"my-go-backend/post_service/src/posts/domain"
+	shared "my-go-backend/post_service/src/shared"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+// -----------------------
+// Mock Services - CORRECTED TO MATCH ACTUAL INTERFACE
+// -----------------------
+
+type mockPostQueryService struct {
+	mock.Mock
+}
+
+// These method names MUST match your actual PostQueryService interface
+func (m *mockPostQueryService) GetPostByID(ctx context.Context, postID uuid.UUID) (*domain.PostAggregate, error) {
+	args := m.Called(ctx, postID)
+	return args.Get(0).(*domain.PostAggregate), args.Error(1)
+}
+
+func (m *mockPostQueryService) GetPostsByAuthorID(ctx context.Context, authorID uuid.UUID, limit, offset int) ([]*domain.PostAggregate, error) {
+	args := m.Called(ctx, authorID, limit, offset)
+	return args.Get(0).([]*domain.PostAggregate), args.Error(1)
+}
+
+func (m *mockPostQueryService) GetPostsByCommunityID(ctx context.Context, communityID uuid.UUID, requesterID *uuid.UUID, limit, offset int) ([]*domain.PostAggregate, error) {
+	args := m.Called(ctx, communityID, requesterID, limit, offset)
+	return args.Get(0).([]*domain.PostAggregate), args.Error(1)
+}
+
+func (m *mockPostQueryService) SearchPostsByQuery(ctx context.Context, query string, limit, offset int) ([]*domain.PostAggregate, error) {
+	args := m.Called(ctx, query, limit, offset)
+	return args.Get(0).([]*domain.PostAggregate), args.Error(1)
+}
+
+type mockUserQueryService struct {
+	mock.Mock
+}
+
+func (m *mockUserQueryService) GetUserByID(userID uuid.UUID) (*external.UserView, error) {
+	args := m.Called(userID)
+	return args.Get(0).(*external.UserView), args.Error(1)
+}
+
+// -----------------------
+// Test Helpers
+// -----------------------
+
+
+func newTestUserView(userID uuid.UUID) *external.UserView {
+	return &external.UserView{
+		UserID:    userID,
+		Username:  "testuser",
+		FirstName: "Test",
+		LastName:  "User",
+	}
+}
+
+// Response structure for enriched posts
+type EnrichedPostResponse struct {
+	ID          string     `json:"id"`
+	Title       string     `json:"title"`
+	Content     string     `json:"content"`
+	AuthorID    string     `json:"author_id"`
+	Author      AuthorInfo `json:"author"`
+	CommunityID string     `json:"community_id"`
+	IsPublic    bool       `json:"is_public"`
+	Likes       int        `json:"likes"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+type AuthorInfo struct {
+	UserID    string `json:"user_id"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+}
+
+func newTestEnrichedPostResponse(post *domain.PostAggregate, author *external.UserView) EnrichedPostResponse {
+	return EnrichedPostResponse{
+		ID:          post.ID().String(),
+		Title:       post.Title(),
+		Content:     post.Content(),
+		AuthorID:    post.AuthorID().String(),
+		CommunityID: post.CommunityID().String(),
+		IsPublic:    post.IsPublic(),
+		Likes:       post.LikesCount(),
+		CreatedAt:   post.CreatedAt(),
+		UpdatedAt:   post.UpdatedAt(),
+		Author: AuthorInfo{
+			UserID:    author.UserID.String(),
+			Username:  author.Username,
+			FirstName: author.FirstName,
+			LastName:  author.LastName,
+		},
+	}
+}
+
+// -----------------------
+// Tests
+// -----------------------
+
+func TestPostQueryController_GetPost(t *testing.T) {
+	postID := uuid.New()
+	authorID := uuid.New()
+	communityID := uuid.New()
+	post := newTestPostAggregate(authorID, communityID)
+	author := newTestUserView(authorID)
+
+	tests := []struct {
+		name            string
+		path            string
+		postIDParam     string
+		setupMocks      func(postSvc *mockPostQueryService, userSvc *mockUserQueryService)
+		expectStatus    int
+		expectErrorCode shared.ErrorCode
+		expectResponse  bool
+	}{
+		{
+			name:        "success",
+			path:        "/posts/" + postID.String(),
+			postIDParam: postID.String(),
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostByID", mock.Anything, postID).Return(post, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil)
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+		},
+		{
+			name:        "post not found",
+			path:        "/posts/" + postID.String(),
+			postIDParam: postID.String(),
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				err := &shared.AppError{
+					Message:    "post not found",
+					Code:       domain.ErrorCodePostNotFound,
+					HTTPStatus: http.StatusNotFound,
+					Details:    map[string]string{"post_id": postID.String()},
+				}
+				postSvc.On("GetPostByID", mock.Anything, postID).Return((*domain.PostAggregate)(nil), err)
+			},
+			expectStatus:    http.StatusNotFound,
+			expectErrorCode: domain.ErrorCodePostNotFound,
+		},
+		{
+			name:         "invalid UUID",
+			path:         "/posts/invalid-uuid",
+			postIDParam:  "invalid-uuid",
+			expectStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "internal error",
+			path:        "/posts/" + postID.String(),
+			postIDParam: postID.String(),
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostByID", mock.Anything, postID).Return((*domain.PostAggregate)(nil), errors.New("db error"))
+			},
+			expectStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			w := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(w)
+
+			ctx.Request, _ = http.NewRequest(http.MethodGet, tt.path, nil)
+			ctx.Params = []gin.Param{
+				{Key: "id", Value: tt.postIDParam},
+			}
+
+			mockPostSvc := new(mockPostQueryService)
+			mockUserSvc := new(mockUserQueryService)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockPostSvc, mockUserSvc)
+			}
+
+			ctrl := NewPostQueryController(mockPostSvc, mockUserSvc)
+			ctrl.GetPost(ctx)
+
+			assert.Equal(t, tt.expectStatus, w.Code,
+				"Expected status %d, got %d. Response: %s",
+				tt.expectStatus, w.Code, w.Body.String())
+
+			if tt.expectErrorCode != "" {
+				var resp map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid JSON")
+
+				code, exists := resp["code"]
+				assert.True(t, exists, "Response should contain 'code' field. Response: %s", w.Body.String())
+				assert.Equal(t, string(tt.expectErrorCode), code)
+			}
+
+			if tt.expectResponse {
+				var resp EnrichedPostResponse
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid EnrichedPostResponse")
+				assert.Equal(t, "Test Title", resp.Title)
+				assert.Equal(t, author.Username, resp.Author.Username)
+			}
+		})
+	}
+}
+
+func TestPostQueryController_GetPostsByAuthor(t *testing.T) {
+	authorID := uuid.New()
+	communityID := uuid.New()
+	post1 := newTestPostAggregate(authorID, communityID)
+	post2 := newTestPostAggregate(authorID, communityID)
+	posts := []*domain.PostAggregate{post1, post2}
+	author := newTestUserView(authorID)
+
+	tests := []struct {
+		name            string
+		path            string
+		authorIDParam   string
+		queryParams     string
+		setupMocks      func(postSvc *mockPostQueryService, userSvc *mockUserQueryService)
+		expectStatus    int
+		expectErrorCode shared.ErrorCode
+		expectResponse  bool
+		expectedCount   int
+	}{
+		{
+			name:          "success with default pagination",
+			path:          "/users/" + authorID.String() + "/posts",
+			authorIDParam: authorID.String(),
+			queryParams:   "",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostsByAuthorID", mock.Anything, authorID, 10, 0).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:          "success with custom pagination",
+			path:          "/users/" + authorID.String() + "/posts",
+			authorIDParam: authorID.String(),
+			queryParams:   "?limit=5&offset=10",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostsByAuthorID", mock.Anything, authorID, 5, 10).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:          "pagination bounds - limit too small",
+			path:          "/users/" + authorID.String() + "/posts",
+			authorIDParam: authorID.String(),
+			queryParams:   "?limit=0&offset=0",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostsByAuthorID", mock.Anything, authorID, 10, 0).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:          "pagination bounds - limit too large",
+			path:          "/users/" + authorID.String() + "/posts",
+			authorIDParam: authorID.String(),
+			queryParams:   "?limit=200&offset=0",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostsByAuthorID", mock.Anything, authorID, 100, 0).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:          "author not found",
+			path:          "/users/" + authorID.String() + "/posts",
+			authorIDParam: authorID.String(),
+			queryParams:   "",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				err := &shared.AppError{
+					Message:    "author not found",
+					Code:       "AUTHOR_NOT_FOUND",
+					HTTPStatus: http.StatusNotFound,
+					Details:    map[string]string{"author_id": authorID.String()},
+				}
+				postSvc.On("GetPostsByAuthorID", mock.Anything, authorID, 10, 0).Return([]*domain.PostAggregate{}, err)
+			},
+			expectStatus:    http.StatusNotFound,
+			expectErrorCode: "AUTHOR_NOT_FOUND",
+		},
+		{
+			name:          "invalid author UUID",
+			path:          "/users/invalid-uuid/posts",
+			authorIDParam: "invalid-uuid",
+			queryParams:   "",
+			expectStatus:  http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			w := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(w)
+
+			fullPath := tt.path + tt.queryParams
+			ctx.Request, _ = http.NewRequest(http.MethodGet, fullPath, nil)
+			ctx.Params = []gin.Param{
+				{Key: "userId", Value: tt.authorIDParam},
+			}
+
+			mockPostSvc := new(mockPostQueryService)
+			mockUserSvc := new(mockUserQueryService)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockPostSvc, mockUserSvc)
+			}
+
+			ctrl := NewPostQueryController(mockPostSvc, mockUserSvc)
+			ctrl.GetPostsByAuthor(ctx)
+
+			assert.Equal(t, tt.expectStatus, w.Code,
+				"Expected status %d, got %d. Response: %s",
+				tt.expectStatus, w.Code, w.Body.String())
+
+			if tt.expectErrorCode != "" {
+				var resp map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid JSON")
+
+				code, exists := resp["code"]
+				assert.True(t, exists, "Response should contain 'code' field. Response: %s", w.Body.String())
+				assert.Equal(t, string(tt.expectErrorCode), code)
+			}
+
+			if tt.expectResponse {
+				var resp []EnrichedPostResponse
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid array of EnrichedPostResponse")
+				assert.Len(t, resp, tt.expectedCount)
+				if tt.expectedCount > 0 {
+					assert.Equal(t, "Test Title", resp[0].Title)
+					assert.Equal(t, author.Username, resp[0].Author.Username)
+				}
+			}
+		})
+	}
+}
+
+func TestPostQueryController_GetPostsByCommunity(t *testing.T) {
+	communityID := uuid.New()
+	authorID := uuid.New()
+	requesterID := uuid.New()
+	post1 := newTestPostAggregate(authorID, communityID)
+	post2 := newTestPostAggregate(authorID, communityID)
+	posts := []*domain.PostAggregate{post1, post2}
+	author := newTestUserView(authorID)
+
+	tests := []struct {
+		name             string
+		path             string
+		communityIDParam string
+		userIDInContext  string
+		queryParams      string
+		setupMocks       func(postSvc *mockPostQueryService, userSvc *mockUserQueryService)
+		expectStatus     int
+		expectErrorCode  shared.ErrorCode
+		expectResponse   bool
+		expectedCount    int
+	}{
+		{
+			name:             "success with authenticated user",
+			path:             "/communities/" + communityID.String() + "/posts",
+			communityIDParam: communityID.String(),
+			userIDInContext:  requesterID.String(),
+			queryParams:      "",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostsByCommunityID", mock.Anything, communityID, mock.MatchedBy(func(id *uuid.UUID) bool {
+					return id != nil && *id == requesterID
+				}), 10, 0).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:             "success with unauthenticated user",
+			path:             "/communities/" + communityID.String() + "/posts",
+			communityIDParam: communityID.String(),
+			userIDInContext:  "",
+			queryParams:      "",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("GetPostsByCommunityID", mock.Anything, communityID, (*uuid.UUID)(nil), 10, 0).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:             "community not found",
+			path:             "/communities/" + communityID.String() + "/posts",
+			communityIDParam: communityID.String(),
+			userIDInContext:  requesterID.String(),
+			queryParams:      "",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				err := &shared.AppError{
+					Message:    "community not found",
+					Code:       "COMMUNITY_NOT_FOUND",
+					HTTPStatus: http.StatusNotFound,
+					Details:    map[string]string{"community_id": communityID.String()},
+				}
+				postSvc.On("GetPostsByCommunityID", mock.Anything, communityID, mock.MatchedBy(func(id *uuid.UUID) bool {
+					return id != nil && *id == requesterID
+				}), 10, 0).Return([]*domain.PostAggregate{}, err)
+			},
+			expectStatus:    http.StatusNotFound,
+			expectErrorCode: "COMMUNITY_NOT_FOUND",
+		},
+		{
+			name:             "invalid community UUID",
+			path:             "/communities/invalid-uuid/posts",
+			communityIDParam: "invalid-uuid",
+			userIDInContext:  requesterID.String(),
+			queryParams:      "",
+			expectStatus:     http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			w := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(w)
+
+			fullPath := tt.path + tt.queryParams
+			ctx.Request, _ = http.NewRequest(http.MethodGet, fullPath, nil)
+			ctx.Params = []gin.Param{
+				{Key: "communityId", Value: tt.communityIDParam},
+			}
+
+			if tt.userIDInContext != "" {
+				ctx.Set(string(contextkeys.UserIDKey), tt.userIDInContext)
+			}
+
+			mockPostSvc := new(mockPostQueryService)
+			mockUserSvc := new(mockUserQueryService)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockPostSvc, mockUserSvc)
+			}
+
+			ctrl := NewPostQueryController(mockPostSvc, mockUserSvc)
+			ctrl.GetPostsByCommunity(ctx)
+
+			assert.Equal(t, tt.expectStatus, w.Code,
+				"Expected status %d, got %d. Response: %s",
+				tt.expectStatus, w.Code, w.Body.String())
+
+			if tt.expectErrorCode != "" {
+				var resp map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid JSON")
+
+				code, exists := resp["code"]
+				assert.True(t, exists, "Response should contain 'code' field. Response: %s", w.Body.String())
+				assert.Equal(t, string(tt.expectErrorCode), code)
+			}
+
+			if tt.expectResponse {
+				var resp []EnrichedPostResponse
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid array of EnrichedPostResponse")
+				assert.Len(t, resp, tt.expectedCount)
+				if tt.expectedCount > 0 {
+					assert.Equal(t, "Test Title", resp[0].Title)
+					assert.Equal(t, author.Username, resp[0].Author.Username)
+				}
+			}
+		})
+	}
+}
+
+func TestPostQueryController_SearchPosts(t *testing.T) {
+	authorID := uuid.New()
+	communityID := uuid.New()
+	post1 := newTestPostAggregate(authorID, communityID)
+	post2 := newTestPostAggregate(authorID, communityID)
+	posts := []*domain.PostAggregate{post1, post2}
+	author := newTestUserView(authorID)
+
+	tests := []struct {
+		name            string
+		queryParam      string
+		queryParams     string
+		setupMocks      func(postSvc *mockPostQueryService, userSvc *mockUserQueryService)
+		expectStatus    int
+		expectErrorCode shared.ErrorCode
+		expectResponse  bool
+		expectedCount   int
+	}{
+		{
+			name:        "success with default pagination",
+			queryParam:  "test",
+			queryParams: "?q=test",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("SearchPostsByQuery", mock.Anything, "test", 10, 0).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:        "success with custom pagination",
+			queryParam:  "search term",
+			queryParams: "?q=search+term&limit=5&offset=10",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("SearchPostsByQuery", mock.Anything, "search term", 5, 10).Return(posts, nil)
+				userSvc.On("GetUserByID", authorID).Return(author, nil).Twice()
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  2,
+		},
+		{
+			name:         "missing search query",
+			queryParam:   "",
+			queryParams:  "",
+			expectStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "no results found",
+			queryParam:  "nonexistent",
+			queryParams: "?q=nonexistent",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				postSvc.On("SearchPostsByQuery", mock.Anything, "nonexistent", 10, 0).Return([]*domain.PostAggregate{}, nil)
+			},
+			expectStatus:   http.StatusOK,
+			expectResponse: true,
+			expectedCount:  0,
+		},
+		{
+			name:        "search service error",
+			queryParam:  "error",
+			queryParams: "?q=error",
+			setupMocks: func(postSvc *mockPostQueryService, userSvc *mockUserQueryService) {
+				err := &shared.AppError{
+					Message:    "search failed",
+					Code:       "SEARCH_FAILED",
+					HTTPStatus: http.StatusInternalServerError,
+					Details:    map[string]string{"query": "error"},
+				}
+				postSvc.On("SearchPostsByQuery", mock.Anything, "error", 10, 0).Return([]*domain.PostAggregate{}, err)
+			},
+			expectStatus:    http.StatusInternalServerError,
+			expectErrorCode: "SEARCH_FAILED",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			w := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(w)
+
+			path := "/posts/search" + tt.queryParams
+			ctx.Request, _ = http.NewRequest(http.MethodGet, path, nil)
+
+			mockPostSvc := new(mockPostQueryService)
+			mockUserSvc := new(mockUserQueryService)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockPostSvc, mockUserSvc)
+			}
+
+			ctrl := NewPostQueryController(mockPostSvc, mockUserSvc)
+			ctrl.SearchPosts(ctx)
+
+			assert.Equal(t, tt.expectStatus, w.Code,
+				"Expected status %d, got %d. Response: %s",
+				tt.expectStatus, w.Code, w.Body.String())
+
+			if tt.expectErrorCode != "" {
+				var resp map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid JSON")
+
+				code, exists := resp["code"]
+				assert.True(t, exists, "Response should contain 'code' field. Response: %s", w.Body.String())
+				assert.Equal(t, string(tt.expectErrorCode), code)
+			}
+
+			if tt.expectResponse {
+				var resp []EnrichedPostResponse
+				err := json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.NoError(t, err, "Response should be valid array of EnrichedPostResponse")
+				assert.Len(t, resp, tt.expectedCount)
+			}
+		})
+	}
+}

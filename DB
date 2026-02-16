@@ -1,0 +1,48 @@
+-- Run as superuser (e.g., 'postgres')
+
+CREATE DATABASE authdb;
+
+\c authdb
+
+CREATE USER ishimwe WITH PASSWORD '2025New+';
+
+GRANT ALL PRIVILEGES ON DATABASE authdb TO ishimwe;
+
+-- Ensure user can use the public schema
+GRANT ALL ON SCHEMA public TO ishimwe;
+
+-- Grant access to existing objects (in case any exist)
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ishimwe;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ishimwe;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO ishimwe;
+
+-- Set default privileges for future objects (assuming objects will be created by 'postgres' or during init)
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ishimwe;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ishimwe;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO ishimwe;
+ALTER USER ishimwe CREATEDB;
+
+
+
+
+
+
+
+
+
+
+sudo -u postgres psql
+-----connect to db
+sudo -u postgres psql -d authdb
+------list all other dbs
+\l
+-------delete db
+DROP DATABASE IF EXISTS chatdb;
+
+--exit
+\q
+
+--connect db
+
+
+\c dbname
