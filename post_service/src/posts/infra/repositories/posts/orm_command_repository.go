@@ -35,7 +35,7 @@ func (r *PostCommandRepository) Create(ctx context.Context, agg *domain.PostAggr
 		model.UpdatedAt,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to insert post: %w", err)
+		return fmt.Errorf("failed to insert post : %w", err)
 	}
 	return nil
 }
