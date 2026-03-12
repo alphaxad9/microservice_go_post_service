@@ -1,0 +1,44 @@
+i think this one shows that our go service is being succesfully authenticated by auth service by (ishimwe@alpha:~/projs/django/microservices$ curl -X POST http://127.0.0.1:8000/zedvye_one/users/token/ \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: EW8jqY3yDI8veaqY8kUXPT31p5NxLGKrCx4CX7zeXLxa2oETl7pBT57dlvZkLSpa" \
+  -c cookies.txt -b cookies.txt \
+  -d '{
+    "identifier": "brocode",
+    "password": "Test123!"
+  }' | jq
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1447  100  1386  100    61    481     21  0:00:02  0:00:02 --:--:--   502
+{
+  "message": "brocode logged in successfully",
+  "user": {
+    "id": "012a181c-0c14-4aba-b868-4329555c3540",
+    "username": "brocode",
+    "email": "brocode@gmail.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "profile_picture": null
+  },
+  "access": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczMzE2NjI4LCJpYXQiOjE3NzMzMTYzMjksImp0aSI6IjE2ZDI1Yzg4ZDQ4NDRhYTJiYTk1MTA3NDU4YWRjOWE3IiwidXNlcl9pZCI6IjAxMmExODFjLTBjMTQtNGFiYS1iODY4LTQzMjk1NTVjMzU0MCJ9.Cgyxi41EQQEwy4hFCarLtMSoYR4ZyDPQbghRYx9r1vGLjvD-K1g1Y9xb6ywUls1LWb_FJgIwcAfm4_c5ySRpRaHpfLIBiyuw2YSs_LRPjV6RGo5eLN4tdvaRafjiXYJqhMlNLgqTV7JLqH7DGAsxhNjeP_KP57KUQXe0vWCb41_CAnqko9AOqxkdyxZbqoe9_EGsX8OJMoymOc2yKMTxJrTfNNnqJDFOJcpgBVA2dQlQlVdVy1Nhz3HxGx2n6x8tNbd3OBxHDtmWzKB7GDwYzENJQceZ9p00gurv1Kdd62WpvilrCgceOxjQ4PcUvcX9K_FEpbwQdkkDqRAn_e0-zQ",
+  "refresh": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3MzQwMjcyOCwiaWF0IjoxNzczMzE2MzI4LCJqdGkiOiI5OTViODU1OTY5MjE0MTM4YjdmZDFjYTJhYTJjZjMwMyIsInVzZXJfaWQiOiIwMTJhMTgxYy0wYzE0LTRhYmEtYjg2OC00MzI5NTU1YzM1NDAifQ.jtu9Aci5q44Kro6ZHO9ZRyvm1UK7diY5B8dpgQbsnU2KcDgqc-Z_rQwyOX1sI-ItF1OGT0Hn26wRTHT-T3NbDOjGkr3vWfphU3_K9VRLch7nwdhcOUxuP6mHI9mj7TAHz0wpqIQHmK9u1lQZb2rmBcE-CZ1zxv5-0v567zeS2xjACtZJ8UHllR7hqkQobK7c13o0RzXQTkzdW1JEylO0qC6fgMNDbP0w7-6UP22ObUJ5PqJspfBFVz5xPEkAexcMvh3Qxk9LDxVhPeZcl4ZM6kwBiDhCh89mtgJzMNAoSUU3dTMQeQuGrqu434MHdLT6ClWqpFuNg_U5x7KSC1JMwQ"
+}
+ishimwe@alpha:~/projs/django/microservices$ curl http://127.0.0.1:8080/api/v1/auth/test \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczMzE2NjI4LCJpYXQiOjE3NzMzMTYzMjksImp0aSI6IjE2ZDI1Yzg4ZDQ4NDRhYTJiYTk1MTA3NDU4YWRjOWE3IiwidXNlcl9pZCI6IjAxMmExODFjLTBjMTQtNGFiYS1iODY4LTQzMjk1NTVjMzU0MCJ9.Cgyxi41EQQEwy4hFCarLtMSoYR4ZyDPQbghRYx9r1vGLjvD-K1g1Y9xb6ywUls1LWb_FJgIwcAfm4_c5ySRpRaHpfLIBiyuw2YSs_LRPjV6RGo5eLN4tdvaRafjiXYJqhMlNLgqTV7JLqH7DGAsxhNjeP_KP57KUQXe0vWCb41_CAnqko9AOqxkdyxZbqoe9_EGsX8OJMoymOc2yKMTxJrTfNNnqJDFOJcpgBVA2dQlQlVdVy1Nhz3HxGx2n6x8tNbd3OBxHDtmWzKB7GDwYzENJQceZ9p00gurv1Kdd62WpvilrCgceOxjQ4PcUvcX9K_FEpbwQdkkDqRAn_e0-zQ" | jq
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    59  100    59    0     0   1373      0 --:--:-- --:--:-- --:--:--  1404
+{
+  "user_id_from_jwt": "012a181c-0c14-4aba-b868-4329555c3540"
+}
+ishimwe@alpha:~/projs/django/microservices$ ) also see this is my real key in my auth-service (ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 
+curl -X GET http://127.0.0.1:8000/zedvye_one/users/public_key/
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvK5+ZjVe5LOWwAgScnFu
+r+xgOs13PHJmMKyDqV624PhScHcemyGaprT+imX42fgNCZ+ZqX1qYHaXQ9q9iAPD
+kzAOZZhN1X/Io5JY3/RSpEZqXobtn6I3n51jYFaxqjyKD6oaWL5OsMOOISmOs2q0
+tg/4gI/tYhX9U1acJgRR7/NdH1YjAJh080ML2CVkZnEcvvary2YcPa93ft/zHvLQ
+u2Fglwr1eTWRcgE3b4dYx5XUBJghuA+Efkbn+rkJXJqfsksdb/PmbgctYjknRFAw
+iZQAgS+kybDx9Isi6SiMDaowjqKaYKrf86sOkq+boFUbPY8HekKCMaoD8c6aF4sj
+qwIDAQAB
+-----END PUBLIC KEY-----ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 
+) and i have 
