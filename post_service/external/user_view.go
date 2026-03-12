@@ -1,4 +1,4 @@
-// my-go-backend/post_service/external/user_view.go
+// github.com/alphaxad9/my-go-backend/post_service/external/user_view.go
 package external
 
 import "github.com/google/uuid"

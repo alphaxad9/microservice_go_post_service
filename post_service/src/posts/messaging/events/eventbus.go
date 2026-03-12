@@ -1,4 +1,4 @@
-// my-go-backend/post_service/src/posts/messaging/events/eventbus.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/eventbus.go
 package eventbus
 
 import (
@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 )
 
 // EventHandler is a function that processes a domain event.

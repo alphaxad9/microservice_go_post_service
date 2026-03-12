@@ -1,5 +1,5 @@
 // Package repositories contains PostgreSQL repository implementations.
-// my-go-backend/post_service/src/posts/infra/repositories/db_test.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/db_test.go
 package repositories
 
 import (

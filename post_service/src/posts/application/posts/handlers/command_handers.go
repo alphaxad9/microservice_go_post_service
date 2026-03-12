@@ -1,12 +1,12 @@
 // Package handlers provides command handlers for post mutations.
-// / my-go-backend/post_service/src/posts/application/posts/handlers/command_handlers.go
+// / github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/handlers/command_handlers.go
 package handlers
 
 import (
 	"context"
 
-	"my-go-backend/post_service/src/posts/application/posts/services"
-	"my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/services"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
 
 	"github.com/google/uuid"
 )

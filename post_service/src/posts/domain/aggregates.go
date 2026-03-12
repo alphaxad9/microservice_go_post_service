@@ -1,4 +1,4 @@
-// my-go-backend/post_service/src/posts/domain/aggregate.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/aggregate.go
 package domain
 
 import (

@@ -1,10 +1,10 @@
-// my-go-backend/post_service/src/posts/domain/repos/query_repo.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/repos/query_repo.go
 package repos
 
 import (
 	"context"
 
-	post_domain "my-go-backend/post_service/src/posts/domain"
+	post_domain "github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
 
 	"github.com/google/uuid"
 )

@@ -1,4 +1,4 @@
-// my-go-backend/post_service/src/posts/messaging/events/kafka/producer.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/kafka/producer.go
 
 package kafka
 
@@ -6,7 +6,7 @@ import (
 	"context"
 	"log/slog"
 
-	"my-go-backend/post_service/internal/config"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/config"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )

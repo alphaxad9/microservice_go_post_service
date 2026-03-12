@@ -1,10 +1,10 @@
-// my-go-backend/post_service/src/posts/domain/events/events.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/events/events.go
 package events
 
 import (
-	"my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 
-	post_aggregate "my-go-backend/post_service/src/posts/domain"
+	post_aggregate "github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
 
 	"github.com/google/uuid"
 )

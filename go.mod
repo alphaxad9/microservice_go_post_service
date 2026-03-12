@@ -1,4 +1,4 @@
-module my-go-backend
+module github.com/alphaxad9/my-go-backend
 
 go 1.24.3
 

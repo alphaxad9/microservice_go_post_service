@@ -1,4 +1,4 @@
-// my-go-backend/post_service/src/posts/messaging/events/kafka/consumer.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/kafka/consumer.go
 package kafka
 
 import (
@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"my-go-backend/post_service/internal/config"
-	events "my-go-backend/post_service/src/posts/messaging/events"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/config"
+	events "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )

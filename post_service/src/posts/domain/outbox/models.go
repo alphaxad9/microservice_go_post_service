@@ -2,7 +2,7 @@ package outbox
 
 import (
 	"encoding/json"
-	exceptons "my-go-backend/post_service/src/posts/domain"
+	exceptons "github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
 	"time"
 
 	"github.com/google/uuid"

@@ -1,16 +1,16 @@
 // Package api provides HTTP controllers for post command operations.
-// my-go-backend/post_service/src/posts/api/controllers/command_controllers.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers/command_controllers.go
 package api
 
 import (
 	"errors"
 	"net/http"
 
-	"my-go-backend/post_service/internal/contextkeys"
-	"my-go-backend/post_service/src/posts/application/posts/handlers"
-	"my-go-backend/post_service/src/posts/application/posts/services"
-	"my-go-backend/post_service/src/posts/ports"
-	"my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/contextkeys"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/handlers"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/services"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/ports"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

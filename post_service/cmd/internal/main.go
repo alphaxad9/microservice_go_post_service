@@ -11,16 +11,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	external_services "my-go-backend/post_service/external/services"
-	"my-go-backend/post_service/internal/config"
-	"my-go-backend/post_service/internal/db"
-	router "my-go-backend/post_service/internal/http"
-	postapi "my-go-backend/post_service/src/posts/api/controllers"
-	postservices "my-go-backend/post_service/src/posts/application/posts/services"
-	outboxrepos "my-go-backend/post_service/src/posts/infra/repositories/outbox"
-	postrepos "my-go-backend/post_service/src/posts/infra/repositories/posts"
-	events "my-go-backend/post_service/src/posts/messaging/events"
-	posts "my-go-backend/post_service/src/posts/messaging/events/posts"
+	external_services "github.com/alphaxad9/my-go-backend/post_service/external/services"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/config"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/db"
+	router "github.com/alphaxad9/my-go-backend/post_service/internal/http"
+	postapi "github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers"
+	postservices "github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/services"
+	outboxrepos "github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/outbox"
+	postrepos "github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/posts"
+	events "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events"
+	posts "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/posts"
 )
 
 func main() {

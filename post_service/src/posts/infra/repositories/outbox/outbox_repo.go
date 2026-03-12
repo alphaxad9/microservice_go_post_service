@@ -1,5 +1,5 @@
 // Package repositories implements PostgreSQL-backed domain repositories.
-// my-go-backend/post_service/src/posts/infra/repositories/outbox/outbox_repo.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/outbox/outbox_repo.go
 package repositories
 
 import (
@@ -7,9 +7,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"my-go-backend/post_service/src/posts/domain/outbox"
-	"my-go-backend/post_service/src/posts/infra/models"
-	"my-go-backend/post_service/src/posts/ports"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/outbox"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/models"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/ports"
 
 	"github.com/google/uuid"
 )

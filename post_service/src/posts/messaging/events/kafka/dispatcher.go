@@ -1,4 +1,4 @@
-// my-go-backend/post_service/src/posts/messaging/events/kafka/dispatcher.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/kafka/dispatcher.go
 package kafka
 
 import (
@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	domain "my-go-backend/post_service/src/posts/domain"
-	domain_event "my-go-backend/post_service/src/posts/domain/events"
-	events "my-go-backend/post_service/src/posts/messaging/events"
+	domain "github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
+	domain_event "github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/events"
+	events "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events"
 
 	"github.com/google/uuid"
 )

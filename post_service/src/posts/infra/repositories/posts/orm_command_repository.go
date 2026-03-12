@@ -1,13 +1,13 @@
-// my-go-backend/post_service/src/posts/infra/repositories/posts/orm_command_repository.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/posts/orm_command_repository.go
 package repositories
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"my-go-backend/post_service/src/posts/domain"
-	"my-go-backend/post_service/src/posts/infra/models"
-	"my-go-backend/post_service/src/posts/ports"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/models"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/ports"
 
 	"github.com/google/uuid"
 )

@@ -1,6 +1,6 @@
-(ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend/post_service/cmd/internal$ go run main.go 
+(ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/github.com/alphaxad9/my-go-backend/post_service/cmd/internal$ go run main.go 
 
-2026/03/12 14:46:57 ✅ .env loaded from: /home/ishimwe/projs/django/microservices/service_one/zedvye_six/my-go-backend/.env
+2026/03/12 14:46:57 ✅ .env loaded from: /home/ishimwe/projs/django/microservices/service_one/zedvye_six/github.com/alphaxad9/my-go-backend/.env
 2026/03/12 14:46:57 Connected to PostgreSQL successfully
 2026/03/12 14:46:57 Posts table and indexes created successfully
 2026/03/12 14:46:57 Event outbox table and indexes created successfully
@@ -12,20 +12,20 @@
  - using env:	export GIN_MODE=release
  - using code:	gin.SetMode(gin.ReleaseMode)
 
-[GIN-debug] GET    /api/v1/auth/ping         --> my-go-backend/post_service/internal/http.SetupRouter.func1 (4 handlers)
-[GIN-debug] GET    /api/v1/auth/test         --> my-go-backend/post_service/internal/http.SetupRouter.func2 (5 handlers)
-[GIN-debug] GET    /api/v1/posts/:id         --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPost-fm (4 handlers)
-[GIN-debug] GET    /api/v1/posts/search      --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).SearchPosts-fm (4 handlers)
-[GIN-debug] GET    /api/v1/users/:userId/posts --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPostsByAuthor-fm (4 handlers)
-[GIN-debug] GET    /api/v1/communities/:communityId/posts --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPostsByCommunity-fm (4 handlers)
-[GIN-debug] POST   /api/v1/posts             --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).CreatePost-fm (5 handlers)
-[GIN-debug] PUT    /api/v1/posts/:id         --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).UpdatePost-fm (5 handlers)
-[GIN-debug] PATCH  /api/v1/posts/:id/visibility --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).TogglePostVisibility-fm (5 handlers)
-[GIN-debug] POST   /api/v1/posts/:id/like    --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).LikePost-fm (5 handlers)
-[GIN-debug] POST   /api/v1/posts/:id/unlike  --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).UnlikePost-fm (5 handlers)
-[GIN-debug] POST   /api/v1/posts/:id/comment --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).AddCommentToPost-fm (5 handlers)
-[GIN-debug] DELETE /api/v1/posts/:id/comment --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).RemoveCommentFromPost-fm (5 handlers)
-[GIN-debug] DELETE /api/v1/posts/:id         --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).DeletePost-fm (5 handlers)
+[GIN-debug] GET    /api/v1/auth/ping         --> github.com/alphaxad9/my-go-backend/post_service/internal/http.SetupRouter.func1 (4 handlers)
+[GIN-debug] GET    /api/v1/auth/test         --> github.com/alphaxad9/my-go-backend/post_service/internal/http.SetupRouter.func2 (5 handlers)
+[GIN-debug] GET    /api/v1/posts/:id         --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPost-fm (4 handlers)
+[GIN-debug] GET    /api/v1/posts/search      --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).SearchPosts-fm (4 handlers)
+[GIN-debug] GET    /api/v1/users/:userId/posts --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPostsByAuthor-fm (4 handlers)
+[GIN-debug] GET    /api/v1/communities/:communityId/posts --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPostsByCommunity-fm (4 handlers)
+[GIN-debug] POST   /api/v1/posts             --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).CreatePost-fm (5 handlers)
+[GIN-debug] PUT    /api/v1/posts/:id         --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).UpdatePost-fm (5 handlers)
+[GIN-debug] PATCH  /api/v1/posts/:id/visibility --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).TogglePostVisibility-fm (5 handlers)
+[GIN-debug] POST   /api/v1/posts/:id/like    --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).LikePost-fm (5 handlers)
+[GIN-debug] POST   /api/v1/posts/:id/unlike  --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).UnlikePost-fm (5 handlers)
+[GIN-debug] POST   /api/v1/posts/:id/comment --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).AddCommentToPost-fm (5 handlers)
+[GIN-debug] DELETE /api/v1/posts/:id/comment --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).RemoveCommentFromPost-fm (5 handlers)
+[GIN-debug] DELETE /api/v1/posts/:id         --> github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).DeletePost-fm (5 handlers)
 2026/03/12 14:46:57 Post service starting on port 8080 in debug mode...
 User service error: failed to call http://127.0.0.1:8000/zedvye_one/users/users/012a181c-0c14-4aba-b868-4329555c3540/: Get "http://127.0.0.1:8000/zedvye_one/users/users/012a181c-0c14-4aba-b868-4329555c3540/": net/http: invalid header field value for "X-Internal-Key"
 [GIN] 2026/03/12 - 14:47:30 | 200 |    4.521977ms |       127.0.0.1 | GET      "/api/v1/posts/e70e6e24-9ff5-4a52-9d0e-365bb4d237ee"
@@ -122,15 +122,15 @@ curl "http://127.0.0.1:8080/api/v1/users/$USER_ID/posts?limit=5&offset=0" | jq
 }
 ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 
 )
-(// my-go-backend/post_service/src/posts/application/posts/handlers/query_handlers.go
+(// github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/handlers/query_handlers.go
 package handlers
 
 import (
 	"context"
 	"fmt"
-	"my-go-backend/post_service/external"
-	services "my-go-backend/post_service/external/services" // ← now imports the package with interface
-	postappservices "my-go-backend/post_service/src/posts/application/posts/services"
+	"github.com/alphaxad9/my-go-backend/post_service/external"
+	services "github.com/alphaxad9/my-go-backend/post_service/external/services" // ← now imports the package with interface
+	postappservices "github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/services"
 
 	"github.com/google/uuid"
 )

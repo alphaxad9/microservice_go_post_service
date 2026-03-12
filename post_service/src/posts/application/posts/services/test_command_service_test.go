@@ -6,10 +6,10 @@ import (
 	"errors"
 	"testing"
 
-	"my-go-backend/post_service/src/posts/domain"
-	"my-go-backend/post_service/src/posts/domain/events"
-	"my-go-backend/post_service/src/posts/domain/outbox"
-	shared "my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/events"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/outbox"
+	shared "github.com/alphaxad9/my-go-backend/post_service/src/shared"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

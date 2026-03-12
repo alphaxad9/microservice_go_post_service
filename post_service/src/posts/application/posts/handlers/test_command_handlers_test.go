@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"my-go-backend/post_service/src/posts/domain"
-	shared "my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
+	shared "github.com/alphaxad9/my-go-backend/post_service/src/shared"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

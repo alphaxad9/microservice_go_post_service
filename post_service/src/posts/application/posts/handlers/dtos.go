@@ -1,11 +1,11 @@
-// my-go-backend/post_service/src/posts/application/posts/handlers/dtos.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/handlers/dtos.go
 package handlers
 
 import (
 	"time"
 
-	"my-go-backend/post_service/external"
-	"my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/external"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
 
 	"github.com/google/uuid"
 )

@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	auth "my-go-backend/post_service/internal/authentication"
-	"my-go-backend/post_service/internal/config"
-	"my-go-backend/post_service/internal/contextkeys"
-	"my-go-backend/post_service/internal/http/middleware"
-	postapi "my-go-backend/post_service/src/posts/api/controllers"
+	auth "github.com/alphaxad9/my-go-backend/post_service/internal/authentication"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/config"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/contextkeys"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/http/middleware"
+	postapi "github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers"
 
 	"github.com/gin-gonic/gin"
 )

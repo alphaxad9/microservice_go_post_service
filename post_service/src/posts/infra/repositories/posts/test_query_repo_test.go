@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
 )
 
 // Helper to insert a post directly for query testing

@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"my-go-backend/post_service/src/posts/domain/outbox"
-	"my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/outbox"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 )
 
 const (

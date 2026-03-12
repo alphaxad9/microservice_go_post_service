@@ -1,14 +1,14 @@
 // Package api provides HTTP controllers for post query operations.
-// my-go-backend/post_service/src/posts/api/controllers/query_controllers.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers/query_controllers.go
 package api
 
 import (
 	"net/http"
 	"strconv"
 
-	user_services "my-go-backend/post_service/external/services"
-	"my-go-backend/post_service/src/posts/application/posts/handlers"
-	"my-go-backend/post_service/src/posts/application/posts/services"
+	user_services "github.com/alphaxad9/my-go-backend/post_service/external/services"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/handlers"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

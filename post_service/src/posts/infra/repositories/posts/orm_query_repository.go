@@ -1,4 +1,4 @@
-// my-go-backend/post_service/src/posts/infra/repositories/posts/orm_query_repository.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/posts/orm_query_repository.go
 package repositories
 
 import (
@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"my-go-backend/post_service/src/posts/domain"
-	"my-go-backend/post_service/src/posts/infra/models"
-	"my-go-backend/post_service/src/posts/ports"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/models"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/ports"
 )
 
 type PostQueryRepository struct {

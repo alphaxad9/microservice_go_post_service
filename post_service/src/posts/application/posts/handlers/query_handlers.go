@@ -1,11 +1,11 @@
-// my-go-backend/post_service/src/posts/application/posts/handlers/query_handlers.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/handlers/query_handlers.go
 package handlers
 
 import (
 	"context"
-	"my-go-backend/post_service/external"
-	services "my-go-backend/post_service/external/services" // ← now imports the package with interface
-	postappservices "my-go-backend/post_service/src/posts/application/posts/services"
+	"github.com/alphaxad9/my-go-backend/post_service/external"
+	services "github.com/alphaxad9/my-go-backend/post_service/external/services" // ← now imports the package with interface
+	postappservices "github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/services"
 
 	"github.com/google/uuid"
 )

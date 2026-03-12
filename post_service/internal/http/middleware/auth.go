@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	auth "my-go-backend/post_service/internal/authentication"
-	"my-go-backend/post_service/internal/contextkeys"
+	auth "github.com/alphaxad9/my-go-backend/post_service/internal/authentication"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/contextkeys"
 
 	"github.com/gin-gonic/gin"
 )

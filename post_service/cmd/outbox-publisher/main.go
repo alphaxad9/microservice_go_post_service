@@ -1,4 +1,4 @@
-// my-go-backend/post_service/cmd/outbox-publisher/main.go
+// github.com/alphaxad9/my-go-backend/post_service/cmd/outbox-publisher/main.go
 package main
 
 import (
@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"my-go-backend/post_service/internal/config"
-	"my-go-backend/post_service/internal/db"
-	outboxrepos "my-go-backend/post_service/src/posts/infra/repositories/outbox"
-	kafkamessaging "my-go-backend/post_service/src/posts/messaging/events/kafka"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/config"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/db"
+	outboxrepos "github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/outbox"
+	kafkamessaging "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/kafka"
 )
 
 func main() {
@@ -69,7 +69,7 @@ func main() {
 	slog.Info("Kafka outbox publisher stopped")
 }
 
-// # From project root (my-go-backend/post_service/)
+// # From project root (github.com/alphaxad9/my-go-backend/post_service/)
 // go mod tidy
 
 // # Build the publisher binary

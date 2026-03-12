@@ -1,4 +1,4 @@
-//my-go-backend/post_service/src/shared/events.go
+//github.com/alphaxad9/my-go-backend/post_service/src/shared/events.go
 
 package shared
 

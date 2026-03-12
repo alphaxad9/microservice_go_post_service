@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"my-go-backend/post_service/internal/contextkeys"
-	"my-go-backend/post_service/src/posts/domain"
-	"my-go-backend/post_service/src/posts/ports"
-	shared "my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/contextkeys"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/ports"
+	shared "github.com/alphaxad9/my-go-backend/post_service/src/shared"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

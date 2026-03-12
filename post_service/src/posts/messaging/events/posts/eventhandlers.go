@@ -1,13 +1,13 @@
-// my-go-backend/post_service/src/posts/messaging/events/posts/eventhandlers.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/posts/eventhandlers.go
 package handlers
 
 import (
 	"context"
 	"log/slog"
 
-	domain_event "my-go-backend/post_service/src/posts/domain/events"
-	eventbus "my-go-backend/post_service/src/posts/messaging/events"
-	"my-go-backend/post_service/src/shared"
+	domain_event "github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/events"
+	eventbus "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 )
 
 type PostEventHandler struct {

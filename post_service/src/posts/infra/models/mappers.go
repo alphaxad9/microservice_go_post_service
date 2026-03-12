@@ -1,7 +1,7 @@
 package models
 
 import (
-	domain "my-go-backend/post_service/src/posts/domain"
+	domain "github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
 )
 
 // FromDomain converts a PostAggregate to a PostModel for persistence.

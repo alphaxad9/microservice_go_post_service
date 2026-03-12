@@ -1,4 +1,4 @@
-// my-go-backend/post_service/cmd/kafka-consumer/main.go
+// github.com/alphaxad9/my-go-backend/post_service/cmd/kafka-consumer/main.go
 package main
 
 import (
@@ -9,10 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"my-go-backend/post_service/internal/config"
-	events "my-go-backend/post_service/src/posts/messaging/events"
-	"my-go-backend/post_service/src/posts/messaging/events/kafka"
-	handlers "my-go-backend/post_service/src/posts/messaging/events/posts"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/config"
+	events "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/kafka"
+	handlers "github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/posts"
 )
 
 func main() {

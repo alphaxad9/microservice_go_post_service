@@ -1,10 +1,10 @@
-// my-go-backend/post_service/external/services/user_api_client.go
+// github.com/alphaxad9/my-go-backend/post_service/external/services/user_api_client.go
 package services
 
 import (
 	"fmt"
 
-	"my-go-backend/post_service/external"
+	"github.com/alphaxad9/my-go-backend/post_service/external"
 
 	"github.com/google/uuid"
 )

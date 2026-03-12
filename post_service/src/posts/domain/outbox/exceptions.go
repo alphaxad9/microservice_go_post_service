@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 	"github.com/google/uuid"
 )
 

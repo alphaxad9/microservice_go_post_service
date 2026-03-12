@@ -1,6 +1,6 @@
 // Package models contains database-level structs that map directly to tables.
 // These are used only by infrastructure repositories—not exposed to domain logic.
-// my-go-backend/post_service/src/posts/infra/models/outbox_model.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/models/outbox_model.go
 package models
 
 import (

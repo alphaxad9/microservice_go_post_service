@@ -1,15 +1,15 @@
 // Package services implements application services for post domain commands.
-// my-go-backend/post_service/src/posts/application/posts/services/command_service.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/application/posts/services/command_service.go
 package services
 
 import (
 	"context"
 
-	"my-go-backend/post_service/src/posts/domain"
-	"my-go-backend/post_service/src/posts/domain/events"
-	"my-go-backend/post_service/src/posts/domain/outbox"
-	"my-go-backend/post_service/src/posts/domain/repos"
-	"my-go-backend/post_service/src/shared"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/events"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/outbox"
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/repos"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 
 	"github.com/google/uuid"
 )

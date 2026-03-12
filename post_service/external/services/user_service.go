@@ -1,7 +1,7 @@
 package services
 
 import (
-	"my-go-backend/post_service/external"
+	"github.com/alphaxad9/my-go-backend/post_service/external"
 
 	"github.com/google/uuid"
 )

@@ -1,4 +1,4 @@
-// my-go-backend/post_service/src/posts/messaging/events/kafka/outbox_publisher.go
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/kafka/outbox_publisher.go
 package kafka
 
 import (
@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	"my-go-backend/post_service/internal/db"
-	outboxrepos "my-go-backend/post_service/src/posts/infra/repositories/outbox"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/db"
+	outboxrepos "github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/outbox"
 )
 
 type OutboxPublisher struct {
