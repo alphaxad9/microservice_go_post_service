@@ -1,4 +1,36 @@
-i think this one shows that our go service is being succesfully authenticated by auth service by (ishimwe@alpha:~/projs/django/microservices$ curl -X POST http://127.0.0.1:8000/zedvye_one/users/token/ \
+(ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend/post_service/cmd/internal$ go run main.go 
+
+2026/03/12 14:46:57 ✅ .env loaded from: /home/ishimwe/projs/django/microservices/service_one/zedvye_six/my-go-backend/.env
+2026/03/12 14:46:57 Connected to PostgreSQL successfully
+2026/03/12 14:46:57 Posts table and indexes created successfully
+2026/03/12 14:46:57 Event outbox table and indexes created successfully
+2026/03/12 14:46:57 All database tables created successfully
+2026/03/12 14:46:57 Post event handlers registered successfully
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/v1/auth/ping         --> my-go-backend/post_service/internal/http.SetupRouter.func1 (4 handlers)
+[GIN-debug] GET    /api/v1/auth/test         --> my-go-backend/post_service/internal/http.SetupRouter.func2 (5 handlers)
+[GIN-debug] GET    /api/v1/posts/:id         --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPost-fm (4 handlers)
+[GIN-debug] GET    /api/v1/posts/search      --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).SearchPosts-fm (4 handlers)
+[GIN-debug] GET    /api/v1/users/:userId/posts --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPostsByAuthor-fm (4 handlers)
+[GIN-debug] GET    /api/v1/communities/:communityId/posts --> my-go-backend/post_service/src/posts/api/controllers.(*PostQueryController).GetPostsByCommunity-fm (4 handlers)
+[GIN-debug] POST   /api/v1/posts             --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).CreatePost-fm (5 handlers)
+[GIN-debug] PUT    /api/v1/posts/:id         --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).UpdatePost-fm (5 handlers)
+[GIN-debug] PATCH  /api/v1/posts/:id/visibility --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).TogglePostVisibility-fm (5 handlers)
+[GIN-debug] POST   /api/v1/posts/:id/like    --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).LikePost-fm (5 handlers)
+[GIN-debug] POST   /api/v1/posts/:id/unlike  --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).UnlikePost-fm (5 handlers)
+[GIN-debug] POST   /api/v1/posts/:id/comment --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).AddCommentToPost-fm (5 handlers)
+[GIN-debug] DELETE /api/v1/posts/:id/comment --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).RemoveCommentFromPost-fm (5 handlers)
+[GIN-debug] DELETE /api/v1/posts/:id         --> my-go-backend/post_service/src/posts/api/controllers.(*PostCommandController).DeletePost-fm (5 handlers)
+2026/03/12 14:46:57 Post service starting on port 8080 in debug mode...
+User service error: failed to call http://127.0.0.1:8000/zedvye_one/users/users/012a181c-0c14-4aba-b868-4329555c3540/: Get "http://127.0.0.1:8000/zedvye_one/users/users/012a181c-0c14-4aba-b868-4329555c3540/": net/http: invalid header field value for "X-Internal-Key"
+[GIN] 2026/03/12 - 14:47:30 | 200 |    4.521977ms |       127.0.0.1 | GET      "/api/v1/posts/e70e6e24-9ff5-4a52-9d0e-365bb4d237ee"
+[GIN] 2026/03/12 - 14:48:30 | 200 |    1.677707ms |       127.0.0.1 | GET      "/api/v1/users/012a181c-0c14-4aba-b868-4329555c3540/posts?limit=5&offset=0"
+)(ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ curl -X POST http://127.0.0.1:8000/zedvye_one/users/token/ \
   -H "Content-Type: application/json" \
   -H "X-CSRFToken: EW8jqY3yDI8veaqY8kUXPT31p5NxLGKrCx4CX7zeXLxa2oETl7pBT57dlvZkLSpa" \
   -c cookies.txt -b cookies.txt \
@@ -8,7 +40,7 @@ i think this one shows that our go service is being succesfully authenticated by
   }' | jq
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100  1447  100  1386  100    61    481     21  0:00:02  0:00:02 --:--:--   502
+100  1447  100  1386  100    61    632     27  0:00:02  0:00:02 --:--:--   660
 {
   "message": "brocode logged in successfully",
   "user": {
@@ -19,26 +51,363 @@ i think this one shows that our go service is being succesfully authenticated by
     "last_name": "Doe",
     "profile_picture": null
   },
-  "access": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczMzE2NjI4LCJpYXQiOjE3NzMzMTYzMjksImp0aSI6IjE2ZDI1Yzg4ZDQ4NDRhYTJiYTk1MTA3NDU4YWRjOWE3IiwidXNlcl9pZCI6IjAxMmExODFjLTBjMTQtNGFiYS1iODY4LTQzMjk1NTVjMzU0MCJ9.Cgyxi41EQQEwy4hFCarLtMSoYR4ZyDPQbghRYx9r1vGLjvD-K1g1Y9xb6ywUls1LWb_FJgIwcAfm4_c5ySRpRaHpfLIBiyuw2YSs_LRPjV6RGo5eLN4tdvaRafjiXYJqhMlNLgqTV7JLqH7DGAsxhNjeP_KP57KUQXe0vWCb41_CAnqko9AOqxkdyxZbqoe9_EGsX8OJMoymOc2yKMTxJrTfNNnqJDFOJcpgBVA2dQlQlVdVy1Nhz3HxGx2n6x8tNbd3OBxHDtmWzKB7GDwYzENJQceZ9p00gurv1Kdd62WpvilrCgceOxjQ4PcUvcX9K_FEpbwQdkkDqRAn_e0-zQ",
-  "refresh": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3MzQwMjcyOCwiaWF0IjoxNzczMzE2MzI4LCJqdGkiOiI5OTViODU1OTY5MjE0MTM4YjdmZDFjYTJhYTJjZjMwMyIsInVzZXJfaWQiOiIwMTJhMTgxYy0wYzE0LTRhYmEtYjg2OC00MzI5NTU1YzM1NDAifQ.jtu9Aci5q44Kro6ZHO9ZRyvm1UK7diY5B8dpgQbsnU2KcDgqc-Z_rQwyOX1sI-ItF1OGT0Hn26wRTHT-T3NbDOjGkr3vWfphU3_K9VRLch7nwdhcOUxuP6mHI9mj7TAHz0wpqIQHmK9u1lQZb2rmBcE-CZ1zxv5-0v567zeS2xjACtZJ8UHllR7hqkQobK7c13o0RzXQTkzdW1JEylO0qC6fgMNDbP0w7-6UP22ObUJ5PqJspfBFVz5xPEkAexcMvh3Qxk9LDxVhPeZcl4ZM6kwBiDhCh89mtgJzMNAoSUU3dTMQeQuGrqu434MHdLT6ClWqpFuNg_U5x7KSC1JMwQ"
+  "access": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczMzE5OTQxLCJpYXQiOjE3NzMzMTk2NDIsImp0aSI6IjE0YTYyYmYwNGE3NzRkOTNiYjdlNTg5ZWFlZDg2NGYyIiwidXNlcl9pZCI6IjAxMmExODFjLTBjMTQtNGFiYS1iODY4LTQzMjk1NTVjMzU0MCJ9.aeaGvVLuSDizEKOOSFf5Po9ly5NZ0cOMHZrvuqEsm-xF0AVKAqRlHozlGV3PEqXGDOIlb2QOsCiGlxPsX_YTLkrLy_u5AXXdjHlLNCiTaSliJU-HSX0M5KVWrlUZuMmstbyX1VhWGFei67UpyWR-EFQRL8O0DQ4Dfm0y4xbjuY80I0PWspGkcy67ejTIEdYekDNI5ZqIAAeD1wPwzWtTun2sjpxnitQij1T-DFE0kJ1KNY6bpB4_jHLNsDavXpdD7dlhv4Ji_NcdMpA0Pc3TpzR0znh5C8aGYGAuXGE8QktbzP3KTJFMNnB_oZy0Nr6DHC1aXceam1QpRB15PEwPzQ",
+  "refresh": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3MzQwNjA0MSwiaWF0IjoxNzczMzE5NjQxLCJqdGkiOiJhN2ZiMjExZmUzNWY0NzdhYmUyY2JjMjE4NTBjNzg5ZCIsInVzZXJfaWQiOiIwMTJhMTgxYy0wYzE0LTRhYmEtYjg2OC00MzI5NTU1YzM1NDAifQ.pRCjiIyC8Zv1ia_JYO7pRQRnafJOfkQYTapcMQkGhgOpxXAcYZfNy886cJmOEke21T5MQ5IFraGzG77geovN9_7OX4LubQJPkB0zSgHgSAnxAKXUZnYqcAVZ5_fXlt-prUWhymIa1BSxXOP6bx1-AAyhBQKdUVninpgvUZL2dDWsGcqIVGN3ytL2lrzXw7kHdnLH_RZl4VZ74nPYVyFdMlPET7F-QGL6V35GXvEtXdAnJgAujNAn-2sDlV3cUFm5H3Y7NzauxC9b8-WaV4p3Yvh-3eLsbn4BIHhFJoSIAYR-EwuIYj8QSaglCcam-At2U6x0Axlg65tz2fwF9tooJA"
 }
-ishimwe@alpha:~/projs/django/microservices$ curl http://127.0.0.1:8080/api/v1/auth/test \
-  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczMzE2NjI4LCJpYXQiOjE3NzMzMTYzMjksImp0aSI6IjE2ZDI1Yzg4ZDQ4NDRhYTJiYTk1MTA3NDU4YWRjOWE3IiwidXNlcl9pZCI6IjAxMmExODFjLTBjMTQtNGFiYS1iODY4LTQzMjk1NTVjMzU0MCJ9.Cgyxi41EQQEwy4hFCarLtMSoYR4ZyDPQbghRYx9r1vGLjvD-K1g1Y9xb6ywUls1LWb_FJgIwcAfm4_c5ySRpRaHpfLIBiyuw2YSs_LRPjV6RGo5eLN4tdvaRafjiXYJqhMlNLgqTV7JLqH7DGAsxhNjeP_KP57KUQXe0vWCb41_CAnqko9AOqxkdyxZbqoe9_EGsX8OJMoymOc2yKMTxJrTfNNnqJDFOJcpgBVA2dQlQlVdVy1Nhz3HxGx2n6x8tNbd3OBxHDtmWzKB7GDwYzENJQceZ9p00gurv1Kdd62WpvilrCgceOxjQ4PcUvcX9K_FEpbwQdkkDqRAn_e0-zQ" | jq
+ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ POST_ID="e70e6e24-9ff5-4a52-9d0e-365bb4d237ee"
+curl http://127.0.0.1:8080/api/v1/posts/$POST_ID | jq
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100    59  100    59    0     0   1373      0 --:--:-- --:--:-- --:--:--  1404
+100   423  100   423    0     0  39640      0 --:--:-- --:--:-- --:--:-- 42300
 {
-  "user_id_from_jwt": "012a181c-0c14-4aba-b868-4329555c3540"
+  "id": "e70e6e24-9ff5-4a52-9d0e-365bb4d237ee",
+  "author": {
+    "user_id": "012a181c-0c14-4aba-b868-4329555c3540",
+    "username": ""
+  },
+  "community_id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "My kafkaa go consumer10",
+  "content": "This is the content of my first post in the new service!",
+  "is_public": true,
+  "likes_count": 0,
+  "comment_count": 0,
+  "created_at": "2026-03-12T14:19:00.449902+02:00",
+  "updated_at": "2026-03-12T14:19:00.449902+02:00"
 }
-ishimwe@alpha:~/projs/django/microservices$ ) also see this is my real key in my auth-service (ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 
-curl -X GET http://127.0.0.1:8000/zedvye_one/users/public_key/
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvK5+ZjVe5LOWwAgScnFu
-r+xgOs13PHJmMKyDqV624PhScHcemyGaprT+imX42fgNCZ+ZqX1qYHaXQ9q9iAPD
-kzAOZZhN1X/Io5JY3/RSpEZqXobtn6I3n51jYFaxqjyKD6oaWL5OsMOOISmOs2q0
-tg/4gI/tYhX9U1acJgRR7/NdH1YjAJh080ML2CVkZnEcvvary2YcPa93ft/zHvLQ
-u2Fglwr1eTWRcgE3b4dYx5XUBJghuA+Efkbn+rkJXJqfsksdb/PmbgctYjknRFAw
-iZQAgS+kybDx9Isi6SiMDaowjqKaYKrf86sOkq+boFUbPY8HekKCMaoD8c6aF4sj
-qwIDAQAB
------END PUBLIC KEY-----ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 
-) and i have 
+ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 73093607-af5f-4ed8-ae80-e21db8a4a527
+USER_ID="012a181c-0c14-4aba-b868-4329555c3540"
+
+curl "http://127.0.0.1:8080/api/v1/users/$USER_ID/posts?limit=5&offset=0" | jq
+73093607-af5f-4ed8-ae80-e21db8a4a527: command not found
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   914  100   914    0     0   263k      0 --:--:-- --:--:-- --:--:--  297k
+{
+  "posts": [
+    {
+      "id": "e70e6e24-9ff5-4a52-9d0e-365bb4d237ee",
+      "author": {
+        "user_id": "012a181c-0c14-4aba-b868-4329555c3540",
+        "username": ""
+      },
+      "community_id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "My kafkaa go consumer10",
+      "content": "This is the content of my first post in the new service!",
+      "is_public": true,
+      "likes_count": 0,
+      "comment_count": 0,
+      "created_at": "2026-03-12T14:19:00.449902+02:00",
+      "updated_at": "2026-03-12T14:19:00.449902+02:00"
+    },
+    {
+      "id": "ca47c739-76da-4ee0-abd0-3628990dec5c",
+      "author": {
+        "user_id": "012a181c-0c14-4aba-b868-4329555c3540",
+        "username": ""
+      },
+      "community_id": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "My kafkaa go consumer9",
+      "content": "This is the content of my first post in the new service!",
+      "is_public": true,
+      "likes_count": 0,
+      "comment_count": 0,
+      "created_at": "2026-03-12T13:00:48.062654+02:00",
+      "updated_at": "2026-03-12T13:00:48.062654+02:00"
+    }
+  ],
+  "total_count": 2,
+  "page": 1,
+  "page_size": 5,
+  "has_more": false
+}
+ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 
+)
+(// my-go-backend/post_service/src/posts/application/posts/handlers/query_handlers.go
+package handlers
+
+import (
+	"context"
+	"fmt"
+	"my-go-backend/post_service/external"
+	services "my-go-backend/post_service/external/services" // ← now imports the package with interface
+	postappservices "my-go-backend/post_service/src/posts/application/posts/services"
+
+	"github.com/google/uuid"
+)
+
+// PostQueryHandler uses interfaces for testability
+type PostQueryHandler struct {
+	postQueries postappservices.PostQueryService
+	userClient  services.UserQueryService // ← INTERFACE, not *UserAPIClient
+}
+
+func NewPostQueryHandler(
+	postQueries postappservices.PostQueryService,
+	userClient services.UserQueryService, // ← INTERFACE
+) *PostQueryHandler {
+	return &PostQueryHandler{
+		postQueries: postQueries,
+		userClient:  userClient,
+	}
+}
+
+// GetPostWithAuthor retrieves a single post by ID and enriches it with author details.
+func (h *PostQueryHandler) GetPostWithAuthor(ctx context.Context, postID uuid.UUID) (*PostResponseDTO, error) {
+	postView, err := h.postQueries.GetPostByID(ctx, postID)
+	if err != nil {
+		return nil, err
+	}
+
+	var authorView external.UserView
+	author, err := h.userClient.GetUserByID(postView.AuthorID)
+	if err != nil {
+		fmt.Println("User service error:", err)
+		authorView = external.UserView{UserID: postView.AuthorID}
+	} else {
+		authorView = *author
+	}
+	dto := ToPostResponseDTO(postView, authorView)
+	return &dto, nil
+}
+
+// GetPostsByAuthorWithAuthors retrieves posts by an author and enriches each with author data.
+func (h *PostQueryHandler) GetPostsByAuthorWithAuthors(
+	ctx context.Context,
+	authorID uuid.UUID,
+	limit, offset int,
+) (*PostListResponseDTO, error) {
+	posts, err := h.postQueries.GetPostsByAuthor(ctx, authorID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	totalCount, err := h.postQueries.GetPostCountByAuthor(ctx, authorID)
+	if err != nil {
+		return nil, err
+	}
+
+	var authorView external.UserView
+	author, err := h.userClient.GetUserByID(authorID)
+	if err != nil {
+		authorView = external.UserView{UserID: authorID}
+	} else {
+		authorView = *author
+	}
+
+	authorsMap := make(map[uuid.UUID]external.UserView, len(posts))
+	for _, p := range posts {
+		authorsMap[p.AuthorID] = authorView
+	}
+
+	page := offset/limit + 1
+	if offset%limit != 0 {
+		page++
+	}
+
+	dto := ToPostListResponseDTO(posts, authorsMap, page, limit, totalCount)
+	return &dto, nil
+}
+
+// GetPostsByCommunityWithAuthors retrieves posts in a community and enriches each with its author.
+func (h *PostQueryHandler) GetPostsByCommunityWithAuthors(
+	ctx context.Context,
+	communityID uuid.UUID,
+	requesterID *uuid.UUID,
+	limit, offset int,
+) (*PostListResponseDTO, error) {
+	posts, err := h.postQueries.GetPostsByCommunity(ctx, communityID, requesterID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	authorIDs := make(map[uuid.UUID]struct{})
+	for _, p := range posts {
+		authorIDs[p.AuthorID] = struct{}{}
+	}
+
+	authorsMap := make(map[uuid.UUID]external.UserView)
+	for id := range authorIDs {
+		author, err := h.userClient.GetUserByID(id)
+		if err != nil {
+			authorsMap[id] = external.UserView{UserID: id}
+		} else {
+			authorsMap[id] = *author
+		}
+	}
+
+	// ⚠️ Temporary total count approximation
+	totalCount := offset + len(posts)
+
+	page := offset/limit + 1
+	if offset%limit != 0 {
+		page++
+	}
+
+	dto := ToPostListResponseDTO(posts, authorsMap, page, limit, totalCount)
+	return &dto, nil
+}
+
+// SearchPostsEnriched performs a search and enriches results with author data.
+func (h *PostQueryHandler) SearchPostsEnriched(
+	ctx context.Context,
+	query string,
+	limit, offset int,
+) (*PostListResponseDTO, error) {
+	if query == "" {
+		return &PostListResponseDTO{
+			Posts:      []PostResponseDTO{},
+			TotalCount: 0,
+			Page:       1,
+			PageSize:   limit,
+			HasMore:    false,
+		}, nil
+	}
+
+	posts, err := h.postQueries.SearchPosts(ctx, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	authorIDs := make(map[uuid.UUID]struct{})
+	for _, p := range posts {
+		authorIDs[p.AuthorID] = struct{}{}
+	}
+
+	authorsMap := make(map[uuid.UUID]external.UserView)
+	for id := range authorIDs {
+		author, err := h.userClient.GetUserByID(id)
+		if err != nil {
+			authorsMap[id] = external.UserView{UserID: id}
+		} else {
+			authorsMap[id] = *author
+		}
+	}
+
+	totalCount := offset + len(posts)
+	page := offset/limit + 1
+	if offset%limit != 0 {
+		page++
+	}
+
+	dto := ToPostListResponseDTO(posts, authorsMap, page, limit, totalCount)
+	return &dto, nil
+}
+) also see this (ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ curl -X POST http://127.0.0.1:8000/zedvye_one/users/token/ \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: EW8jqY3yDI8veaqY8kUXPT31p5NxLGKrCx4CX7zeXLxa2oETl7pBT57dlvZkLSpa" \
+  -c cookies.txt -b cookies.txt \
+  -d '{
+    "identifier": "test@example.com",
+    "password": "Test123!"
+  }' | jq
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1457  100  1387  100    70    691     34  0:00:02  0:00:02 --:--:--   727
+{
+  "message": "testuser logged in successfully",
+  "user": {
+    "id": "9e6c4138-3129-4875-8e72-25e4cb05905d",
+    "username": "testuser",
+    "email": "test@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "profile_picture": null
+  },
+  "access": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczMzIwMDk2LCJpYXQiOjE3NzMzMTk3OTYsImp0aSI6IjY1NTAzYTE5OThiNzQxODU4OGY2YzVjMDdiOTlmNzRjIiwidXNlcl9pZCI6IjllNmM0MTM4LTMxMjktNDg3NS04ZTcyLTI1ZTRjYjA1OTA1ZCJ9.Huc2vyIRGB7UYSeyTo3ra2prF6XyqTf9Ge7INUFDSLXiv8L21AtF-V81pXVQe7VeSvxE8RgfeH3UwH04Kw0dO6VlkvByWyUjGIwS3nCCDJAWCe3R0hRtkAHTjy6lFzyw2M5oQGy_XKHrlxUTldzOU9JHnEs917XZfql3oOEef--OGrtWOHv1Y1mVl2zQbNzj7t0Gcqd8V8e9DbXLcYrxwDIgzTV6rOjLNh98bOcUlM3ALtlMzHjPedyF_nVDAcsamYaPb3My1OzaP68bLm7tH0BvS2wVQEDGHj8di4-smR2eDgBcwRlwQV2aez9QWIEisKzHmOsdxKZttRre1oNmHw",
+  "refresh": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3MzQwNjE5NiwiaWF0IjoxNzczMzE5Nzk2LCJqdGkiOiIwN2ZlMDQ1OTJjMTU0YjdiOGYyZDdjZWQ2N2FkMmFjMyIsInVzZXJfaWQiOiI5ZTZjNDEzOC0zMTI5LTQ4NzUtOGU3Mi0yNWU0Y2IwNTkwNWQifQ.XVI47uczGioxN3Qq62o8qLQO9m3eafJsuf6fHylfoJxq4iCOwn4TkNm2aszn42aYtLQtaxeTBOdAFG4AY4W7RWS-XSX1bJDDgcM77_6YwvmtjVsYoFRiNMbgj52yK52g0COSbhYYkHjt1URuVqh0SAC83odPI0AL9HPrnjFuVdfVKXlWa8kOD1LNjtPxczKeWqtC08oRSyX0YBs1B7iBqF8o4chOJUG7K6GzvYZMb6grM8lGvLlL5pmMCrOBPg1kpt5_qvtaZUxT5YWaBe_-HHCyFs8dC4laC4qrBTnU96wrJLiwftxhQLU5daQX_AUJ1c1X_jn5Rm1rQCQ3-9iHtw"
+}
+ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ curl -X GET http://127.0.0.1:8000/zedvye_one/users/users/9e6c4138-3129-4875-8e72-25e4cb05905d/ \
+  -H "Content-Type: application/json" \
+  -c cookies.txt -b cookies.txt | jq
+
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100    63  100    63    0     0   1542      0 --:--:-- --:--:-- --:--:--  1575
+{
+  "detail": "You do not have permission to perform this action."
+}
+ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ curl -X GET "http://127.0.0.1:8000/zedvye_one/users/users/" \
+  -H "Content-Type: application/json" \
+  -c cookies.txt -b cookies.txt | jq
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   645  100   645    0     0  18913      0 --:--:-- --:--:-- --:--:-- 19545
+{
+  "users": [
+    {
+      "user_id": "9e6c4138-3129-4875-8e72-25e4cb05905d",
+      "username": "testuser",
+      "email": "test@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "profile_picture": null,
+      "is_active": true,
+      "is_deleted": false,
+      "created_at": "2026-02-15T09:54:22.056372+00:00",
+      "updated_at": "2026-02-15T09:54:22.056389+00:00"
+    },
+    {
+      "user_id": "012a181c-0c14-4aba-b868-4329555c3540",
+      "username": "brocode",
+      "email": "brocode@gmail.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "profile_picture": null,
+      "is_active": true,
+      "is_deleted": false,
+      "created_at": "2026-03-12T10:59:21.513126+00:00",
+      "updated_at": "2026-03-12T10:59:21.513154+00:00"
+    }
+  ],
+  "pagination": {
+    "limit": 100,
+    "offset": 0,
+    "total": 2
+  }
+}
+ishimwe@alpha:~/projs/django/microservices/service_one/zedvye_six/my-go-backend$ 
+) and i have (from django.contrib import admin
+from django.urls import path, include
+from django.views.static import serve
+from django.conf import settings
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('zedvye_one/users/', include('src.apis.users.urls')),
+    path('zedvye_one/profile/', include('src.apis.profile.urls')),
+    path('health/', include('src.apis.health.urls')),
+    
+]
+if settings.DEBUG:
+    urlpatterns += [
+        path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+    ])(# src/infrastructure/apps/users/urls.py
+from django.urls import path
+from .views import CsrfTokenView, CustomTokenObtainPairView, UserCreationView, UserProfileView, UserLogoutView, CustomTokenRefreshView, UserDeletionView,UserUpdateProfileView,  UserSoftDeleteView, UserByIdView,UserListView,  ChangeEmailView, ChangeUsernameView, ChangePasswordView, PublicKeyView
+
+urlpatterns = [
+    path('csrf/', CsrfTokenView.as_view(), name='csrf_token'),
+    path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
+    path('register/', UserCreationView.as_view(), name='register'),
+    path('profile/', UserProfileView.as_view(), name='profile'),
+    path('logout/', UserLogoutView.as_view(), name='logout'),
+    path('delete/', UserDeletionView.as_view(), name='delete_user'),  
+
+    path('profile/update/', UserUpdateProfileView.as_view(), name='update_profile'),
+
+
+    path('users/<uuid:user_id>/', UserByIdView.as_view(), name='user_by_id'),
+    path('users/', UserListView.as_view(), name='user_list'),
+    
+    # New user update routes
+    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
+    path('change-username/', ChangeUsernameView.as_view(), name='change_username'),
+    path('change-email/', ChangeEmailView.as_view(), name='change_email'),
+
+    # Updated soft delete (password required)
+    path('soft-delete/', UserSoftDeleteView.as_view(), name='soft_delete_user'),
+    path("public_key/", PublicKeyView.as_view(), name="public_key"), 
+]) what is this issue in auth-service its self

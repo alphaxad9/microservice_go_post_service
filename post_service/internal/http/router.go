@@ -38,6 +38,14 @@ func SetupRouter(cfg *config.Config, r *Router) *gin.Engine {
 		time.Duration(cfg.AuthPublicKeyTTL)*time.Second,
 	)
 
+	// === Health Check Endpoint (No Auth Required) ===
+	router.GET("/health/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "post_service",
+		})
+	})
+
 	api := router.Group("/api/v1")
 	// Keep existing auth test routes
 	api.GET("/auth/ping", func(c *gin.Context) {
