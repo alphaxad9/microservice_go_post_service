@@ -53,19 +53,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Download dependencies
-        run: go mod download
+      # FIXED: Proper module sync for CI
+      - name: Sync modules
+        run: |
+          go clean -modcache
+          go mod tidy
+          go mod download
 
       - name: Run go vet
         run: go vet ./...
 
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.56.2
-
+      # IMPROVED: Use official golangci-lint action instead of manual install
       - name: Run golangci-lint
-        run: |
-          golangci-lint run ./...
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.56.2
+          args: --timeout=5m
 
       - name: Run tests with coverage
         run: |
@@ -168,4 +171,3 @@ jobs:
         with:
           name: sbom
           path: sbom.spdx.json
-
