@@ -1,0 +1,29 @@
+
+# 2. Build the new version
+docker build -t post-service:0.0.2 .
+
+# 3. Also tag as latest
+docker tag post-service:0.0.2 post-service:latest
+
+# 4. Tag for Docker Hub (your username)
+docker tag post-service:0.0.2 alphaxad9/post_service:0.0.2
+docker tag post-service:0.0.2 alphaxad9/post_service:latest
+
+# 5. Push to Docker Hub
+docker push alphaxad9/post_service:0.0.2
+docker push alphaxad9/post_service:latest
+
+# 6. Verify images are built locally
+docker images | grep post_service
+
+# 7. Load into Kind cluster
+kind load docker-image alphaxad9/post_service:0.0.2 --name post-service
+
+# 8. Verify it's loaded in Kind
+docker exec -it post-service-control-plane crictl images | grep post_service
+
+# 9. (Optional) If you need to update your deployment
+kubectl set image deployment/post-service post-service=alphaxad9/post_service:0.0.2 -n your-namespace
+
+# 10. Check rollout status
+kubectl rollout status deployment/post-service -n your-namespace
