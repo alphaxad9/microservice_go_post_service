@@ -1,4 +1,3 @@
-// github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/events/events.go
 package events
 
 import (
@@ -71,7 +70,7 @@ func NewPostCreatedEvent(agg *post_aggregate.PostAggregate) *PostCreatedEvent {
 }
 
 func (e *PostCreatedEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"title":        e.Title,
 		"content":      e.Content,
@@ -98,7 +97,7 @@ func NewPostUpdatedEvent(agg *post_aggregate.PostAggregate) *PostUpdatedEvent {
 }
 
 func (e *PostUpdatedEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"title":   e.Title,
 		"content": e.Content,
@@ -120,7 +119,7 @@ func NewPostVisibilityToggledEvent(agg *post_aggregate.PostAggregate) *PostVisib
 }
 
 func (e *PostVisibilityToggledEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"is_public": e.IsPublic,
 	}
@@ -141,7 +140,7 @@ func NewPostLikedEvent(agg *post_aggregate.PostAggregate) *PostLikedEvent {
 }
 
 func (e *PostLikedEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"likes_count": e.LikesCount,
 	}
@@ -162,7 +161,7 @@ func NewPostUnlikedEvent(agg *post_aggregate.PostAggregate) *PostUnlikedEvent {
 }
 
 func (e *PostUnlikedEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"likes_count": e.LikesCount,
 	}
@@ -183,7 +182,7 @@ func NewPostCommentedEvent(agg *post_aggregate.PostAggregate) *PostCommentedEven
 }
 
 func (e *PostCommentedEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"comment_count": e.CommentCount,
 	}
@@ -204,7 +203,7 @@ func NewPostCommentRemovedEvent(agg *post_aggregate.PostAggregate) *PostCommentR
 }
 
 func (e *PostCommentRemovedEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"comment_count": e.CommentCount,
 	}
@@ -229,7 +228,7 @@ func NewPostDeletedEvent(agg *post_aggregate.PostAggregate) *PostDeletedEvent {
 }
 
 func (e *PostDeletedEvent) ToMap() map[string]interface{} {
-	base := e.PostEvent.ToMap()
+	base := e.BaseEvent.ToMap()
 	base["payload"] = map[string]interface{}{
 		"title":        e.Title,
 		"author_id":    e.AuthorID.String(),

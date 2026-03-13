@@ -1,4 +1,4 @@
-package auth
+package authentication
 
 import (
 	"crypto/rsa"
@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 type Verifier struct {
