@@ -35,13 +35,20 @@ jobs:
           --health-retries 5
 
     steps:
+      # FIX 1: Full checkout (not shallow) to fix module resolution
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+
+      # FIX 2: Explicitly enable Go modules
+      - name: Enable Go modules
+        run: go env -w GO111MODULE=on
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -53,15 +60,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # FIXED: Simple module download (no tidy that might cause issues)
+      # FIX 3: Debug Go environment (helps diagnose issues)
+      - name: Debug Go env
+        run: |
+          go env
+          go list ./...
+
       - name: Download Go modules
         run: go mod download
 
-      # FIXED: Verify modules are correct
       - name: Verify modules
         run: go mod verify
 
-      # FIXED: Build to catch any compilation issues early
       - name: Build
         run: go build ./...
 
@@ -111,8 +121,11 @@ jobs:
       actions: read
 
     steps:
+      # FIX: Same full checkout for build job
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
