@@ -53,17 +53,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # FIXED: Proper module sync for CI
-      - name: Sync modules
-        run: |
-          go clean -modcache
-          go mod tidy
-          go mod download
+      # FIXED: Simple module download (no tidy that might cause issues)
+      - name: Download Go modules
+        run: go mod download
+
+      # FIXED: Verify modules are correct
+      - name: Verify modules
+        run: go mod verify
+
+      # FIXED: Build to catch any compilation issues early
+      - name: Build
+        run: go build ./...
 
       - name: Run go vet
         run: go vet ./...
 
-      # IMPROVED: Use official golangci-lint action instead of manual install
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
