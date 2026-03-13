@@ -23,7 +23,7 @@ import (
 )
 
 // -----------------------
-// Mock Service
+// Mock Service (CORRECTLY IMPLEMENTED)
 // -----------------------
 
 type mockPostCommandService struct {
@@ -37,6 +37,9 @@ func (m *mockPostCommandService) CreatePost(
 	isPublic bool,
 ) (*domain.PostAggregate, error) {
 	args := m.Called(ctx, title, content, authorID, communityID, isPublic)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*domain.PostAggregate), args.Error(1)
 }
 
@@ -93,11 +96,6 @@ func (m *mockPostCommandService) DeletePost(
 // Test Helpers
 // -----------------------
 
-func setupGin() *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	return gin.New()
-}
-
 var testTime = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 
 func newTestPostAggregate(authorID, communityID uuid.UUID) *domain.PostAggregate {
@@ -120,17 +118,14 @@ func newTestPostAggregate(authorID, communityID uuid.UUID) *domain.PostAggregate
 // Tests
 // -----------------------
 
-// You can similarly add tests for UnlikePost, AddCommentToPost, RemoveCommentFromPost —
-// they follow the same pattern as LikePost (no body, only path param).
-// For brevity, here's one example:
 func TestPostCommandController_DeletePost(t *testing.T) {
 	postID := uuid.New()
 
 	tests := []struct {
 		name            string
 		path            string
-		postIDParam     string // The ID value to inject into Gin params
-		userID          string // empty = unauthenticated
+		postIDParam     string
+		userID          string
 		setupMocks      func(svc *mockPostCommandService, postID, requesterID uuid.UUID)
 		expectStatus    int
 		expectErrorCode shared.ErrorCode
@@ -186,7 +181,6 @@ func TestPostCommandController_DeletePost(t *testing.T) {
 
 			req, _ := http.NewRequest(http.MethodDelete, tt.path, nil)
 
-			// ✅ Inject user ID into the standard Go request context
 			if tt.userID != "" {
 				req = req.WithContext(
 					context.WithValue(req.Context(), contextkeys.UserIDKey, tt.userID),
@@ -194,43 +188,26 @@ func TestPostCommandController_DeletePost(t *testing.T) {
 			}
 
 			ctx.Request = req
-
-			// Set path parameter so c.Param("id") returns the expected value
-			ctx.Params = []gin.Param{
-				{Key: "id", Value: tt.postIDParam},
-			}
+			ctx.Params = []gin.Param{{Key: "id", Value: tt.postIDParam}}
 
 			mockSvc := new(mockPostCommandService)
 
 			if tt.setupMocks != nil && tt.userID != "" {
-				requesterID, err := uuid.Parse(tt.userID)
-				assert.NoError(t, err, "userID must be a valid UUID string")
-
-				// Only parse postID if it's valid; skip for invalid UUID case
+				requesterID, _ := uuid.Parse(tt.userID)
 				if actualPostID, err := uuid.Parse(tt.postIDParam); err == nil {
 					tt.setupMocks(mockSvc, actualPostID, requesterID)
 				}
-				// For "invalid UUID" test, handler returns early — no mock needed
 			}
 
 			ctrl := NewPostCommandController(mockSvc)
 			ctrl.DeletePost(ctx)
 
-			assert.Equal(t, tt.expectStatus, w.Code,
-				"Expected status %d, got %d. Response: %s",
-				tt.expectStatus, w.Code, w.Body.String())
+			assert.Equal(t, tt.expectStatus, w.Code)
 
-			// Check error code if expected
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				err := json.Unmarshal(w.Body.Bytes(), &resp)
-				assert.NoError(t, err, "Response should be valid JSON")
-
-				code, exists := resp["code"]
-				assert.True(t, exists,
-					"Response should contain 'code' field. Response: %s", w.Body.String())
-				assert.Equal(t, string(tt.expectErrorCode), code,
-					"Expected error code %s, got %v", tt.expectErrorCode, code)
+				json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
@@ -242,13 +219,8 @@ func TestPostCommandController_AddCommentToPost(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 
-	// Create the request with the full path
 	ctx.Request, _ = http.NewRequest(http.MethodPost, "/posts/"+postID.String()+"/comment", nil)
-
-	// 👇 CRITICAL: Set the path parameter so c.Param("id") works
-	ctx.Params = []gin.Param{
-		{Key: "id", Value: postID.String()},
-	}
+	ctx.Params = []gin.Param{{Key: "id", Value: postID.String()}}
 
 	mockSvc := new(mockPostCommandService)
 	mockSvc.On("AddCommentToPost", mock.Anything, postID).Return(nil)
@@ -259,12 +231,13 @@ func TestPostCommandController_AddCommentToPost(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), `"message":"comment count incremented"`)
 }
+
 func TestPostCommandController_CreatePost(t *testing.T) {
 	tests := []struct {
 		name               string
 		reqBody            interface{}
 		setupMocks         func(svc *mockPostCommandService, authorID, communityID uuid.UUID)
-		userIDInContext    string // empty means unauthenticated
+		userIDInContext    string
 		expectStatus       int
 		expectErrorCode    shared.ErrorCode
 		expectResponseBody bool
@@ -295,7 +268,7 @@ func TestPostCommandController_CreatePost(t *testing.T) {
 		{
 			name: "validation error from domain",
 			reqBody: ports.CreatePostRequest{
-				Title:       "Short", // may be too short per domain rules
+				Title:       "Short",
 				Content:     "This is valid content over ten chars.",
 				CommunityID: uuid.New(),
 				IsPublic:    true,
@@ -322,7 +295,7 @@ func TestPostCommandController_CreatePost(t *testing.T) {
 				CommunityID: uuid.New(),
 				IsPublic:    true,
 			},
-			userIDInContext: "", // no user → auth fails
+			userIDInContext: "",
 			expectStatus:    http.StatusUnauthorized,
 		},
 		{
@@ -357,7 +330,6 @@ func TestPostCommandController_CreatePost(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodPost, "/posts", bytes.NewReader(bodyBytes))
 			req.Header.Set("Content-Type", "application/json")
 
-			// Inject user ID into request context (NOT Gin context!)
 			if tt.userIDInContext != "" {
 				req = req.WithContext(
 					context.WithValue(req.Context(), contextkeys.UserIDKey, tt.userIDInContext),
@@ -385,11 +357,8 @@ func TestPostCommandController_CreatePost(t *testing.T) {
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				err := json.Unmarshal(w.Body.Bytes(), &resp)
-				assert.NoError(t, err, "response should be valid JSON")
-				code, exists := resp["code"]
-				assert.True(t, exists, "response should contain 'code' field")
-				assert.Equal(t, string(tt.expectErrorCode), code)
+				json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 
 			if tt.expectResponseBody {
@@ -410,8 +379,8 @@ func TestPostCommandController_UpdatePost(t *testing.T) {
 		name            string
 		reqBody         interface{}
 		path            string
-		postIDParam     string // value for c.Param("id")
-		userID          string // empty = unauthenticated
+		postIDParam     string
+		userID          string
 		setupMocks      func(svc *mockPostCommandService, postID, requesterID uuid.UUID)
 		expectStatus    int
 		expectErrorCode shared.ErrorCode
@@ -508,7 +477,6 @@ func TestPostCommandController_UpdatePost(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodPut, tt.path, bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
-			// ✅ Inject user ID into request context (NOT Gin context!)
 			if tt.userID != "" {
 				req = req.WithContext(
 					context.WithValue(req.Context(), contextkeys.UserIDKey, tt.userID),
@@ -516,42 +484,26 @@ func TestPostCommandController_UpdatePost(t *testing.T) {
 			}
 
 			ctx.Request = req
-
-			// Manually set path parameter for c.Param("id")
-			ctx.Params = []gin.Param{
-				{Key: "id", Value: tt.postIDParam},
-			}
+			ctx.Params = []gin.Param{{Key: "id", Value: tt.postIDParam}}
 
 			mockSvc := new(mockPostCommandService)
 
 			if tt.setupMocks != nil && tt.userID != "" {
-				requesterID, err := uuid.Parse(tt.userID)
-				assert.NoError(t, err, "userID must be a valid UUID string")
-
-				// Only parse postID if it's valid; skip mock setup for invalid UUID case
+				requesterID, _ := uuid.Parse(tt.userID)
 				if actualPostID, err := uuid.Parse(tt.postIDParam); err == nil {
 					tt.setupMocks(mockSvc, actualPostID, requesterID)
 				}
-				// If parsing fails (e.g., "invalid-uuid"), we don't call service — so no mock needed
 			}
 
 			ctrl := NewPostCommandController(mockSvc)
 			ctrl.UpdatePost(ctx)
 
-			assert.Equal(t, tt.expectStatus, w.Code,
-				"Expected status %d, got %d. Response: %s",
-				tt.expectStatus, w.Code, w.Body.String())
+			assert.Equal(t, tt.expectStatus, w.Code)
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				err := json.Unmarshal(w.Body.Bytes(), &resp)
-				assert.NoError(t, err, "Response should be valid JSON")
-
-				code, exists := resp["code"]
-				assert.True(t, exists,
-					"Response should contain 'code' field. Response: %s", w.Body.String())
-				assert.Equal(t, string(tt.expectErrorCode), code,
-					"Expected error code %s, got %v", tt.expectErrorCode, code)
+				json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
@@ -565,7 +517,7 @@ func TestPostCommandController_TogglePostVisibility(t *testing.T) {
 		requestBody     string
 		path            string
 		postIDParam     string
-		userID          string // empty = unauthenticated
+		userID          string
 		setupMocks      func(svc *mockPostCommandService, postID, requesterID uuid.UUID)
 		expectStatus    int
 		expectErrorCode shared.ErrorCode
@@ -634,7 +586,6 @@ func TestPostCommandController_TogglePostVisibility(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodPatch, tt.path, bytes.NewReader([]byte(tt.requestBody)))
 			req.Header.Set("Content-Type", "application/json")
 
-			// ✅ Inject user ID into the request context (NOT Gin's internal map)
 			if tt.userID != "" {
 				req = req.WithContext(
 					context.WithValue(req.Context(), contextkeys.UserIDKey, tt.userID),
@@ -642,52 +593,38 @@ func TestPostCommandController_TogglePostVisibility(t *testing.T) {
 			}
 
 			ctx.Request = req
-
-			// Set path parameter for c.Param("id")
-			ctx.Params = []gin.Param{
-				{Key: "id", Value: tt.postIDParam},
-			}
+			ctx.Params = []gin.Param{{Key: "id", Value: tt.postIDParam}}
 
 			mockSvc := new(mockPostCommandService)
 
 			if tt.setupMocks != nil && tt.userID != "" {
-				requesterID, err := uuid.Parse(tt.userID)
-				assert.NoError(t, err, "userID must be a valid UUID string")
-
+				requesterID, _ := uuid.Parse(tt.userID)
 				if actualPostID, err := uuid.Parse(tt.postIDParam); err == nil {
 					tt.setupMocks(mockSvc, actualPostID, requesterID)
 				}
-				// Skip mock setup for invalid UUID (handler returns early)
 			}
 
 			ctrl := NewPostCommandController(mockSvc)
 			ctrl.TogglePostVisibility(ctx)
 
-			assert.Equal(t, tt.expectStatus, w.Code,
-				"Expected status %d, got %d. Response: %s",
-				tt.expectStatus, w.Code, w.Body.String())
+			assert.Equal(t, tt.expectStatus, w.Code)
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				err := json.Unmarshal(w.Body.Bytes(), &resp)
-				assert.NoError(t, err, "Response should be valid JSON")
-
-				code, exists := resp["code"]
-				assert.True(t, exists,
-					"Response should contain 'code' field. Response: %s", w.Body.String())
-				assert.Equal(t, string(tt.expectErrorCode), code,
-					"Expected error code %s, got %v", tt.expectErrorCode, code)
+				json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
 }
+
 func TestPostCommandController_LikePost(t *testing.T) {
 	postID := uuid.New()
 
 	tests := []struct {
 		name            string
 		path            string
-		postIDParam     string // The ID value to inject into Gin params
+		postIDParam     string
 		expectStatus    int
 		expectErrorCode shared.ErrorCode
 		setupMocks      func(svc *mockPostCommandService)
@@ -720,7 +657,7 @@ func TestPostCommandController_LikePost(t *testing.T) {
 		{
 			name:         "invalid UUID",
 			path:         "/posts/invalid/like",
-			postIDParam:  "invalid", // This will cause parseUUIDParam to fail
+			postIDParam:  "invalid",
 			expectStatus: http.StatusBadRequest,
 		},
 	}
@@ -732,11 +669,7 @@ func TestPostCommandController_LikePost(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(w)
 
 			ctx.Request, _ = http.NewRequest(http.MethodPost, tt.path, nil)
-
-			// 👇 CRITICAL: Set the path parameter so c.Param("id") works
-			ctx.Params = []gin.Param{
-				{Key: "id", Value: tt.postIDParam},
-			}
+			ctx.Params = []gin.Param{{Key: "id", Value: tt.postIDParam}}
 
 			mockSvc := new(mockPostCommandService)
 			if tt.setupMocks != nil {
@@ -746,19 +679,12 @@ func TestPostCommandController_LikePost(t *testing.T) {
 			ctrl := NewPostCommandController(mockSvc)
 			ctrl.LikePost(ctx)
 
-			assert.Equal(t, tt.expectStatus, w.Code,
-				"Expected status %d, got %d. Response: %s",
-				tt.expectStatus, w.Code, w.Body.String())
+			assert.Equal(t, tt.expectStatus, w.Code)
 
-			// Check error code if expected
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				err := json.Unmarshal(w.Body.Bytes(), &resp)
-				assert.NoError(t, err, "Response should be valid JSON")
-
-				code, exists := resp["code"]
-				assert.True(t, exists, "Response should contain 'code' field. Response: %s", w.Body.String())
-				assert.Equal(t, string(tt.expectErrorCode), code)
+				json.Unmarshal(w.Body.Bytes(), &resp)
+				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
