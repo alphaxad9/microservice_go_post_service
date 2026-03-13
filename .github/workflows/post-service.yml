@@ -35,7 +35,6 @@ jobs:
           --health-retries 5
 
     steps:
-      # FIX 1: Full checkout (not shallow) to fix module resolution
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -46,7 +45,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      # FIX 2: Explicitly enable Go modules
       - name: Enable Go modules
         run: go env -w GO111MODULE=on
 
@@ -60,17 +58,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # FIX 3: Debug Go environment (helps diagnose issues)
-      - name: Debug Go env
-        run: |
-          go env
-          go list ./...
+      # FIXED: Clean module cache before downloading
+      - name: Clean module cache
+        run: go clean -modcache
 
       - name: Download Go modules
         run: go mod download
 
       - name: Verify modules
         run: go mod verify
+
+      - name: Debug Go env
+        run: |
+          go env
+          go list ./...
 
       - name: Build
         run: go build ./...
@@ -121,7 +122,6 @@ jobs:
       actions: read
 
     steps:
-      # FIX: Same full checkout for build job
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
