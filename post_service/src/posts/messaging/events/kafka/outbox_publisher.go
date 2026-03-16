@@ -68,7 +68,17 @@ func (op *OutboxPublisher) publishBatch(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+
+	// Track if we've committed successfully
+	committed := false
+	defer func() {
+		if !committed {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				// Log rollback error but don't overshadow any existing error
+				op.logger.Error("Failed to rollback transaction", "rollback_error", rbErr)
+			}
+		}
+	}()
 
 	repoTx := outboxrepos.NewOutboxRepositoryTx(tx)
 
@@ -78,6 +88,7 @@ func (op *OutboxPublisher) publishBatch(ctx context.Context) error {
 	}
 
 	if len(events) == 0 {
+		committed = true // Nothing to commit, but we're done
 		return nil
 	}
 
@@ -115,5 +126,11 @@ func (op *OutboxPublisher) publishBatch(ctx context.Context) error {
 		)
 	}
 
-	return tx.Commit()
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	committed = true
+	return nil
 }

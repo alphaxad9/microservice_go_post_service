@@ -49,8 +49,7 @@ CREATE TABLE IF NOT EXISTS event_outbox (
 )
 
 var (
-	testDB      *sql.DB
-	testCleanup func()
+	testDB *sql.DB
 )
 
 func TestMain(m *testing.M) {

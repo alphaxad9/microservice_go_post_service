@@ -206,13 +206,15 @@ func TestPostCommandController_DeletePost(t *testing.T) {
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
+				// FIXED: Check error from json.Unmarshal
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Logf("Failed to unmarshal error response: %v", err)
+				}
 				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
 }
-
 func TestPostCommandController_AddCommentToPost(t *testing.T) {
 	postID := uuid.New()
 
@@ -357,7 +359,10 @@ func TestPostCommandController_CreatePost(t *testing.T) {
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
+				// FIXED: Check error from json.Unmarshal
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Logf("Failed to unmarshal error response: %v", err)
+				}
 				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 
@@ -502,13 +507,15 @@ func TestPostCommandController_UpdatePost(t *testing.T) {
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
+				// FIXED: Check error from json.Unmarshal
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Logf("Failed to unmarshal error response: %v", err)
+				}
 				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
 }
-
 func TestPostCommandController_TogglePostVisibility(t *testing.T) {
 	postID := uuid.New()
 

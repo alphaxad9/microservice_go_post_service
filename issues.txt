@@ -1,124 +1,399 @@
-(// Package api tests the PostCommandController HTTP handlers.
-package api
+i changed (// Package repositories tests the PostgreSQL implementation of the outbox repository.
+package repositories
 
 import (
-	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
-	"errors"
-	"net/http"
-	"net/http/httptest"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/alphaxad9/my-go-backend/post_service/internal/contextkeys"
-	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain"
-	"github.com/alphaxad9/my-go-backend/post_service/src/posts/ports"
-	shared "github.com/alphaxad9/my-go-backend/post_service/src/shared"
-
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/alphaxad9/my-go-backend/post_service/src/posts/domain/outbox"
+	"github.com/alphaxad9/my-go-backend/post_service/src/shared"
 )
 
-// -----------------------
-// Mock Service (CORRECTLY IMPLEMENTED)
-// -----------------------
+const (
+	testOutboxSchema = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-type mockPostCommandService struct {
-	mock.Mock
-}
+CREATE TABLE IF NOT EXISTS event_outbox (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type TEXT NOT NULL,
+    event_payload JSONB NOT NULL,
+    aggregate_id UUID NOT NULL,
+    aggregate_type TEXT NOT NULL,
+    aggregate_version INTEGER NOT NULL CHECK (aggregate_version >= 0),
+    trace_id UUID,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    published_at TIMESTAMP WITH TIME ZONE,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    retry_count SMALLINT NOT NULL DEFAULT 0 CHECK (retry_count >= 0),
+    error_message TEXT
+);`
+)
 
-func (m *mockPostCommandService) CreatePost(
-	ctx context.Context,
-	title, content string,
-	authorID, communityID uuid.UUID,
-	isPublic bool,
-) (*domain.PostAggregate, error) {
-	args := m.Called(ctx, title, content, authorID, communityID, isPublic)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+// Global test database connection
+var (
+	testDB *sql.DB
+)
+
+// TestMain connects to the externally managed test database (e.g., docker run postgres on port 5433).
+func TestMain(m *testing.M) {
+	dsn := "host=localhost port=5433 user=testuser password=testpass dbname=testdb sslmode=disable"
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		panic(fmt.Errorf("failed to open database: %w", err))
 	}
-	return args.Get(0).(*domain.PostAggregate), args.Error(1)
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		panic(fmt.Errorf("failed to connect to test DB: %w", err))
+	}
+
+	testDB = db
+
+	// Create outbox schema
+	ctx := context.Background()
+	if _, err := testDB.ExecContext(ctx, testOutboxSchema); err != nil {
+		panic(fmt.Errorf("failed to create outbox schema: %w", err))
+	}
+
+	// Reset outbox table before running tests
+	resetOutbox(nil)
+
+	code := m.Run()
+
+	os.Exit(code)
 }
 
-func (m *mockPostCommandService) UpdatePost(
-	ctx context.Context,
-	postID uuid.UUID,
-	newTitle, newContent string,
-	requesterID uuid.UUID,
-) error {
-	args := m.Called(ctx, postID, newTitle, newContent, requesterID)
-	return args.Error(0)
+// resetOutbox truncates the event_outbox table for test isolation.
+// Accepts nil *testing.T for use in TestMain.
+func resetOutbox(t *testing.T) {
+	ctx := context.Background()
+	_, err := testDB.ExecContext(ctx, "TRUNCATE TABLE event_outbox RESTART IDENTITY CASCADE")
+	if t != nil {
+		require.NoError(t, err)
+	} else if err != nil {
+		panic(err)
+	}
 }
 
-func (m *mockPostCommandService) TogglePostVisibility(
-	ctx context.Context,
-	postID uuid.UUID,
-	isPublic bool,
-	requesterID uuid.UUID,
-) error {
-	args := m.Called(ctx, postID, isPublic, requesterID)
-	return args.Error(0)
+// getTestDB returns the shared test database connection.
+func getTestDB() *sql.DB {
+	return testDB
 }
 
-func (m *mockPostCommandService) LikePost(ctx context.Context, postID uuid.UUID) error {
-	args := m.Called(ctx, postID)
-	return args.Error(0)
+// --- Original tests below (unchanged logic, just faster) ---
+
+func TestOutboxRepository_MarkAsPublished(t *testing.T) {
+	resetOutbox(t)
+	repo := NewOutboxRepository(getTestDB())
+	ctx := context.Background()
+
+	event, err := outbox.NewOutboxEvent("TestEvent", map[string]string{"key": "value"}, uuid.New(), "Test", nil, nil)
+	require.NoError(t, err)
+	err = repo.Save(ctx, event)
+	require.NoError(t, err)
+
+	err = repo.MarkAsPublished(ctx, event.ID)
+	require.NoError(t, err)
+
+	events, err := repo.GetUnpublishedEvents(ctx, 10)
+	require.NoError(t, err)
+	assert.Empty(t, events)
 }
 
-func (m *mockPostCommandService) UnlikePost(ctx context.Context, postID uuid.UUID) error {
-	args := m.Called(ctx, postID)
-	return args.Error(0)
+func TestOutboxRepository_MarkAsPublished_NotFound(t *testing.T) {
+	resetOutbox(t)
+	repo := NewOutboxRepository(getTestDB())
+	ctx := context.Background()
+
+	err := repo.MarkAsPublished(ctx, uuid.New())
+	require.Error(t, err)
+	assert.IsType(t, &shared.AppError{}, err)
+	assert.Contains(t, err.Error(), "not found")
 }
 
-func (m *mockPostCommandService) AddCommentToPost(ctx context.Context, postID uuid.UUID) error {
-	args := m.Called(ctx, postID)
-	return args.Error(0)
+func TestOutboxRepository_MarkAsFailed(t *testing.T) {
+	resetOutbox(t)
+	repo := NewOutboxRepository(getTestDB())
+	ctx := context.Background()
+
+	event, err := outbox.NewOutboxEvent("FailingEvent", map[string]string{"test": "data"}, uuid.New(), "Test", nil, nil)
+	require.NoError(t, err)
+	err = repo.Save(ctx, event)
+	require.NoError(t, err)
+
+	err = repo.MarkAsFailed(ctx, event.ID, "connection timeout")
+	require.NoError(t, err)
+
+	events, err := repo.GetUnpublishedEvents(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+	assert.Equal(t, 1, events[0].RetryCount)
 }
 
-func (m *mockPostCommandService) RemoveCommentFromPost(ctx context.Context, postID uuid.UUID) error {
-	args := m.Called(ctx, postID)
-	return args.Error(0)
+func TestOutboxRepository_MarkAsFailed_NotFound(t *testing.T) {
+	resetOutbox(t)
+	repo := NewOutboxRepository(getTestDB())
+	ctx := context.Background()
+
+	err := repo.MarkAsFailed(ctx, uuid.New(), "simulated error")
+	require.Error(t, err)
+	assert.IsType(t, &shared.AppError{}, err)
+	assert.Contains(t, err.Error(), "not found")
 }
 
-func (m *mockPostCommandService) DeletePost(
-	ctx context.Context,
-	postID uuid.UUID,
-	requesterID uuid.UUID,
-) error {
-	args := m.Called(ctx, postID, requesterID)
-	return args.Error(0)
+func TestOutboxRepository_ConcurrentPolling(t *testing.T) {
+	resetOutbox(t)
+	ctx := context.Background()
+
+	repo := NewOutboxRepository(getTestDB())
+	for i := 0; i < 3; i++ {
+		event, err := outbox.NewOutboxEvent(
+			"ConcurrentEvent",
+			map[string]int{"id": i},
+			uuid.New(),
+			"Test",
+			nil,
+			nil,
+		)
+		require.NoError(t, err)
+		err = repo.Save(ctx, event)
+		require.NoError(t, err)
+	}
+
+	// Simulate two concurrent consumers with separate transactions
+	tx1, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer func() {
+		_ = tx1.Rollback()
+	}()
+
+	tx2, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer func() {
+		_ = tx2.Rollback()
+	}()
+
+	repo1 := NewOutboxRepositoryTx(tx1)
+	events1, err := repo1.GetUnpublishedEvents(ctx, 2)
+	require.NoError(t, err)
+	assert.Len(t, events1, 2)
+
+	repo2 := NewOutboxRepositoryTx(tx2)
+	events2, err := repo2.GetUnpublishedEvents(ctx, 2)
+	require.NoError(t, err)
+	assert.Len(t, events2, 1)
+
+	idMap := make(map[uuid.UUID]bool)
+	for _, e := range events1 {
+		idMap[e.ID] = true
+	}
+	for _, e := range events2 {
+		assert.NotContains(t, idMap, e.ID, "event was processed twice")
+	}
+
+	require.NoError(t, tx1.Commit())
+	require.NoError(t, tx2.Commit())
+}
+)
+this function (TestOutboxRepository_ConcurrentPolling) from (func TestOutboxRepository_ConcurrentPolling(t *testing.T) {
+	resetOutbox(t)
+	ctx := context.Background()
+
+	repo := NewOutboxRepository(getTestDB())
+	for i := 0; i < 3; i++ {
+		event, err := outbox.NewOutboxEvent(
+			"ConcurrentEvent",
+			map[string]int{"id": i},
+			uuid.New(),
+			"Test",
+			nil,
+			nil,
+		)
+		require.NoError(t, err)
+		err = repo.Save(ctx, event)
+		require.NoError(t, err)
+	}
+
+	// Simulate two concurrent consumers with separate transactions
+	tx1, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx1.Rollback()
+
+	tx2, err := testDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx2.Rollback()
+
+	repo1 := NewOutboxRepositoryTx(tx1)
+	events1, err := repo1.GetUnpublishedEvents(ctx, 2)
+	require.NoError(t, err)
+	assert.Len(t, events1, 2)
+
+	repo2 := NewOutboxRepositoryTx(tx2)
+	events2, err := repo2.GetUnpublishedEvents(ctx, 2)
+	require.NoError(t, err)
+	assert.Len(t, events2, 1)
+
+	idMap := make(map[uuid.UUID]bool)
+	for _, e := range events1 {
+		idMap[e.ID] = true
+	}
+	for _, e := range events2 {
+		assert.NotContains(t, idMap, e.ID, "event was processed twice")
+	}
+
+	require.NoError(t, tx1.Commit())
+	require.NoError(t, tx2.Commit())
+}
+)(// github.com/alphaxad9/my-go-backend/post_service/src/posts/messaging/events/kafka/outbox_publisher.go
+package kafka
+
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+	"time"
+
+	"github.com/alphaxad9/my-go-backend/post_service/internal/db"
+	outboxrepos "github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/outbox"
+)
+
+type OutboxPublisher struct {
+	repo     *outboxrepos.OutboxRepositoryImpl
+	producer Producer
+	logger   *slog.Logger
+	cfg      struct {
+		PollInterval time.Duration
+		BatchSize    int
+		MaxRetries   int
+	}
 }
 
-// -----------------------
-// Test Helpers
-// -----------------------
-
-var testTime = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
-
-func newTestPostAggregate(authorID, communityID uuid.UUID) *domain.PostAggregate {
-	id := uuid.New()
-	return domain.ReconstructPostAggregate(
-		id,
-		authorID,
-		communityID,
-		"Test Title",
-		"Test Content",
-		true,
-		0,
-		0,
-		testTime,
-		testTime,
-	)
+func NewOutboxPublisher(
+	repo *outboxrepos.OutboxRepositoryImpl,
+	producer Producer,
+	pollInterval time.Duration,
+	batchSize int,
+	maxRetries int,
+) *OutboxPublisher {
+	return &OutboxPublisher{
+		repo:     repo,
+		producer: producer,
+		logger:   slog.With("component", "outbox_publisher"),
+		cfg: struct {
+			PollInterval time.Duration
+			BatchSize    int
+			MaxRetries   int
+		}{
+			PollInterval: pollInterval,
+			BatchSize:    batchSize,
+			MaxRetries:   maxRetries,
+		},
+	}
 }
 
-// -----------------------
-// Tests
-// -----------------------
+func (op *OutboxPublisher) Start(ctx context.Context) {
+	op.logger.Info("Starting outbox publisher", "interval_sec", op.cfg.PollInterval.Seconds())
+	ticker := time.NewTicker(op.cfg.PollInterval)
+	defer ticker.Stop()
 
-func TestPostCommandController_DeletePost(t *testing.T) {
+	for {
+		select {
+		case <-ctx.Done():
+			op.logger.Info("Shutting down outbox publisher")
+			return
+		case <-ticker.C:
+			if err := op.publishBatch(ctx); err != nil {
+				op.logger.Error("Failed to publish batch", "error", err)
+			}
+		}
+	}
+}
+
+func (op *OutboxPublisher) publishBatch(ctx context.Context) error {
+	tx, err := db.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// Track if we've committed successfully
+	committed := false
+	defer func() {
+		if !committed {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				// Log rollback error but don't overshadow any existing error
+				op.logger.Error("Failed to rollback transaction", "rollback_error", rbErr)
+			}
+		}
+	}()
+
+	repoTx := outboxrepos.NewOutboxRepositoryTx(tx)
+
+	events, err := repoTx.GetUnpublishedEvents(ctx, op.cfg.BatchSize)
+	if err != nil {
+		return err
+	}
+
+	if len(events) == 0 {
+		committed = true // Nothing to commit, but we're done
+		return nil
+	}
+
+	op.logger.Debug("Processing outbox batch", "count", len(events))
+
+	for _, event := range events {
+		payloadBytes, err := json.Marshal(event.EventPayload)
+		if err != nil {
+			op.logger.Error("Failed to serialize event payload", "event_id", event.ID, "error", err)
+			continue
+		}
+
+		headers := map[string]string{
+			"event_type": event.EventType,
+		}
+
+		err = op.producer.Produce(ctx, []byte(event.ID.String()), payloadBytes, headers)
+		if err != nil {
+			op.logger.Error("Failed to produce Kafka message", "event_id", event.ID, "error", err)
+			if err := repoTx.MarkAsFailed(ctx, event.ID, err.Error()); err != nil {
+				op.logger.Error("Failed to mark event as failed", "event_id", event.ID, "error", err)
+			}
+			continue
+		}
+
+		if err := repoTx.MarkAsPublished(ctx, event.ID); err != nil {
+			op.logger.Error("Failed to mark event as published", "event_id", event.ID, "error", err)
+			continue
+		}
+
+		op.logger.Info("Published event to Kafka",
+			"event_id", event.ID,
+			"event_type", event.EventType,
+			"aggregate_id", event.AggregateID,
+		)
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	committed = true
+	return nil
+}
+)
+
+(func TestPostCommandController_DeletePost(t *testing.T) {
 	postID := uuid.New()
 
 	tests := []struct {
@@ -206,33 +481,15 @@ func TestPostCommandController_DeletePost(t *testing.T) {
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
+				// FIXED: Check error from json.Unmarshal
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Logf("Failed to unmarshal error response: %v", err)
+				}
 				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
-}
-
-func TestPostCommandController_AddCommentToPost(t *testing.T) {
-	postID := uuid.New()
-
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-
-	ctx.Request, _ = http.NewRequest(http.MethodPost, "/posts/"+postID.String()+"/comment", nil)
-	ctx.Params = []gin.Param{{Key: "id", Value: postID.String()}}
-
-	mockSvc := new(mockPostCommandService)
-	mockSvc.On("AddCommentToPost", mock.Anything, postID).Return(nil)
-
-	ctrl := NewPostCommandController(mockSvc)
-	ctrl.AddCommentToPost(ctx)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), `"message":"comment count incremented"`)
-}
-
-func TestPostCommandController_CreatePost(t *testing.T) {
+})(func TestPostCommandController_CreatePost(t *testing.T) {
 	tests := []struct {
 		name               string
 		reqBody            interface{}
@@ -357,7 +614,10 @@ func TestPostCommandController_CreatePost(t *testing.T) {
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
+				// FIXED: Check error from json.Unmarshal
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Logf("Failed to unmarshal error response: %v", err)
+				}
 				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 
@@ -367,8 +627,8 @@ func TestPostCommandController_CreatePost(t *testing.T) {
 		})
 	}
 }
-
-func TestPostCommandController_UpdatePost(t *testing.T) {
+)
+(func TestPostCommandController_UpdatePost(t *testing.T) {
 	postID := uuid.New()
 	validReq := ports.UpdatePostRequest{
 		Title:   "Updated Valid Title",
@@ -502,380 +762,223 @@ func TestPostCommandController_UpdatePost(t *testing.T) {
 
 			if tt.expectErrorCode != "" {
 				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
+				// FIXED: Check error from json.Unmarshal
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Logf("Failed to unmarshal error response: %v", err)
+				}
 				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
 			}
 		})
 	}
+})(// post_service/internal/http/router.go
+package router
+
+import (
+	"net/http"
+	"time"
+
+	auth "github.com/alphaxad9/my-go-backend/post_service/internal/authentication"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/config"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/contextkeys"
+	"github.com/alphaxad9/my-go-backend/post_service/internal/http/middleware"
+	postapi "github.com/alphaxad9/my-go-backend/post_service/src/posts/api/controllers"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Router struct {
+	postCommandController *postapi.PostCommandController
+	postQueryController   *postapi.PostQueryController
 }
 
-func TestPostCommandController_TogglePostVisibility(t *testing.T) {
-	postID := uuid.New()
-
-	tests := []struct {
-		name            string
-		requestBody     string
-		path            string
-		postIDParam     string
-		userID          string
-		setupMocks      func(svc *mockPostCommandService, postID, requesterID uuid.UUID)
-		expectStatus    int
-		expectErrorCode shared.ErrorCode
-	}{
-		{
-			name:        "success",
-			requestBody: `{"is_public": false}`,
-			path:        "/posts/" + postID.String() + "/visibility",
-			postIDParam: postID.String(),
-			userID:      uuid.New().String(),
-			setupMocks: func(svc *mockPostCommandService, pid, rid uuid.UUID) {
-				svc.On("TogglePostVisibility", mock.Anything, pid, false, rid).Return(nil)
-			},
-			expectStatus: http.StatusOK,
-		},
-		{
-			name:         "invalid path UUID",
-			requestBody:  `{"is_public": true}`,
-			path:         "/posts/invalid-uuid/visibility",
-			postIDParam:  "invalid-uuid",
-			userID:       uuid.New().String(),
-			expectStatus: http.StatusBadRequest,
-		},
-		{
-			name:        "unauthorized",
-			requestBody: `{"is_public": true}`,
-			path:        "/posts/" + postID.String() + "/visibility",
-			postIDParam: postID.String(),
-			userID:      uuid.New().String(),
-			setupMocks: func(svc *mockPostCommandService, pid, rid uuid.UUID) {
-				err := &shared.AppError{
-					Message:    "user is not the author of this post",
-					Code:       domain.ErrorCodeUserNotPostAuthor,
-					HTTPStatus: http.StatusForbidden,
-					Details:    map[string]string{"post_id": pid.String(), "user_id": rid.String()},
-				}
-				svc.On("TogglePostVisibility", mock.Anything, pid, true, rid).Return(err)
-			},
-			expectStatus:    http.StatusForbidden,
-			expectErrorCode: domain.ErrorCodeUserNotPostAuthor,
-		},
-		{
-			name:         "no auth",
-			requestBody:  `{"is_public": false}`,
-			path:         "/posts/" + postID.String() + "/visibility",
-			postIDParam:  postID.String(),
-			userID:       "",
-			expectStatus: http.StatusUnauthorized,
-		},
-		{
-			name:         "invalid JSON",
-			requestBody:  `{ invalid json }`,
-			path:         "/posts/" + postID.String() + "/visibility",
-			postIDParam:  postID.String(),
-			userID:       uuid.New().String(),
-			expectStatus: http.StatusBadRequest,
-		},
+func NewRouter(
+	postCommandController *postapi.PostCommandController,
+	postQueryController *postapi.PostQueryController,
+) *Router {
+	return &Router{
+		postCommandController: postCommandController,
+		postQueryController:   postQueryController,
 	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gin.SetMode(gin.TestMode)
-			w := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(w)
+func SetupRouter(cfg *config.Config, r *Router) *gin.Engine {
+	router := gin.Default()
+	
+	// FIXED: Check error from SetTrustedProxies
+	if err := router.SetTrustedProxies(nil); err != nil {
+		// In a real application, you might want to panic or log fatally
+		// since this is a configuration issue during startup
+		panic("failed to set trusted proxies: " + err.Error())
+	}
+	
+	router.Use(SetupCORS(cfg.FrontendURL))
+	verifier := auth.NewVerifier(
+		cfg.AuthPublicKeyURL,
+		time.Duration(cfg.AuthPublicKeyTTL)*time.Second,
+	)
 
-			req, _ := http.NewRequest(http.MethodPatch, tt.path, bytes.NewReader([]byte(tt.requestBody)))
-			req.Header.Set("Content-Type", "application/json")
-
-			if tt.userID != "" {
-				req = req.WithContext(
-					context.WithValue(req.Context(), contextkeys.UserIDKey, tt.userID),
-				)
-			}
-
-			ctx.Request = req
-			ctx.Params = []gin.Param{{Key: "id", Value: tt.postIDParam}}
-
-			mockSvc := new(mockPostCommandService)
-
-			if tt.setupMocks != nil && tt.userID != "" {
-				requesterID, _ := uuid.Parse(tt.userID)
-				if actualPostID, err := uuid.Parse(tt.postIDParam); err == nil {
-					tt.setupMocks(mockSvc, actualPostID, requesterID)
-				}
-			}
-
-			ctrl := NewPostCommandController(mockSvc)
-			ctrl.TogglePostVisibility(ctx)
-
-			assert.Equal(t, tt.expectStatus, w.Code)
-
-			if tt.expectErrorCode != "" {
-				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
-				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
-			}
+	// === Health Check Endpoint (No Auth Required) ===
+	router.GET("/health/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "post_service",
 		})
+	})
+
+	api := router.Group("/api/v1")
+	// Keep existing auth test routes
+	api.GET("/auth/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
+	api.GET(
+		"/auth/test",
+		middleware.AuthMiddleware(verifier),
+		func(c *gin.Context) {
+			userID := c.Request.Context().Value(contextkeys.UserIDKey)
+			c.JSON(http.StatusOK, gin.H{
+				"user_id_from_jwt": userID,
+			})
+		},
+	)
+
+	// Public post routes (read-only)
+	publicPosts := api.Group("/posts")
+	{
+		publicPosts.GET("/:id", r.postQueryController.GetPost)
+		publicPosts.GET("/search", r.postQueryController.SearchPosts)
+	}
+
+	// User-scoped public routes
+	api.GET("/users/:userId/posts", r.postQueryController.GetPostsByAuthor)
+
+	// Community-scoped public routes
+	api.GET("/communities/:communityId/posts", r.postQueryController.GetPostsByCommunity)
+
+	// Protected post mutation routes
+	protected := api.Group("")
+	protected.Use(middleware.AuthMiddleware(verifier))
+	{
+		protected.POST("/posts", r.postCommandController.CreatePost)
+		protected.PUT("/posts/:id", r.postCommandController.UpdatePost)
+		protected.PATCH("/posts/:id/visibility", r.postCommandController.TogglePostVisibility)
+		protected.POST("/posts/:id/like", r.postCommandController.LikePost)
+		protected.POST("/posts/:id/unlike", r.postCommandController.UnlikePost)
+		protected.POST("/posts/:id/comment", r.postCommandController.AddCommentToPost)
+		protected.DELETE("/posts/:id/comment", r.postCommandController.RemoveCommentFromPost)
+		protected.DELETE("/posts/:id", r.postCommandController.DeletePost)
+	}
+
+	return router
+})(// Package repositories contains PostgreSQL repository implementations.
+// github.com/alphaxad9/my-go-backend/post_service/src/posts/infra/repositories/db_test.go
+package repositories
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"os"
+	"testing"
+
+	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/require"
+)
+
+const (
+	testPostsSchema = `
+CREATE TABLE IF NOT EXISTS posts (
+    id UUID PRIMARY KEY,
+    author_id UUID NOT NULL,
+    community_id UUID NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    is_public BOOLEAN NOT NULL DEFAULT true,
+    likes_count INTEGER NOT NULL DEFAULT 0,
+    comment_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+);`
+
+	testOutboxSchema = `
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE IF NOT EXISTS event_outbox (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type TEXT NOT NULL,
+    event_payload JSONB NOT NULL,
+    aggregate_id UUID NOT NULL,
+    aggregate_type TEXT NOT NULL,
+    aggregate_version INTEGER NOT NULL CHECK (aggregate_version >= 0),
+    trace_id UUID,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    published_at TIMESTAMP WITH TIME ZONE,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    retry_count SMALLINT NOT NULL DEFAULT 0 CHECK (retry_count >= 0),
+    error_message TEXT
+);`
+)
+
+var (
+	testDB *sql.DB
+)
+
+func TestMain(m *testing.M) {
+	// Connect to externally managed test DB
+	dsn := "host=localhost port=5433 user=testuser password=testpass dbname=testdb sslmode=disable"
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		panic(fmt.Errorf("failed to connect to test DB: %w", err))
+	}
+
+	testDB = db
+
+	// Create schemas
+	ctx := context.Background()
+	if _, err := testDB.ExecContext(ctx, testPostsSchema); err != nil {
+		panic(fmt.Errorf("failed to create posts schema: %w", err))
+	}
+	if _, err := testDB.ExecContext(ctx, testOutboxSchema); err != nil {
+		panic(fmt.Errorf("failed to create outbox schema: %w", err))
+	}
+
+	// Reset before all tests
+	ResetPosts(nil) // pass nil since we don't have *testing.T here
+	ResetOutbox(nil)
+
+	code := m.Run()
+	os.Exit(code)
+}
+
+// Allow nil *testing.T for TestMain usage
+func ResetPosts(t *testing.T) {
+	ctx := context.Background()
+	_, err := testDB.ExecContext(ctx, "TRUNCATE TABLE posts RESTART IDENTITY CASCADE")
+	if t != nil {
+		require.NoError(t, err)
+	} else if err != nil {
+		panic(err)
 	}
 }
 
-func TestPostCommandController_LikePost(t *testing.T) {
-	postID := uuid.New()
-
-	tests := []struct {
-		name            string
-		path            string
-		postIDParam     string
-		expectStatus    int
-		expectErrorCode shared.ErrorCode
-		setupMocks      func(svc *mockPostCommandService)
-	}{
-		{
-			name:         "success",
-			path:         "/posts/" + postID.String() + "/like",
-			postIDParam:  postID.String(),
-			expectStatus: http.StatusOK,
-			setupMocks: func(svc *mockPostCommandService) {
-				svc.On("LikePost", mock.Anything, postID).Return(nil)
-			},
-		},
-		{
-			name:            "post not found",
-			path:            "/posts/" + postID.String() + "/like",
-			postIDParam:     postID.String(),
-			expectStatus:    http.StatusNotFound,
-			expectErrorCode: domain.ErrorCodePostNotFound,
-			setupMocks: func(svc *mockPostCommandService) {
-				err := &shared.AppError{
-					Message:    "post not found",
-					Code:       domain.ErrorCodePostNotFound,
-					HTTPStatus: http.StatusNotFound,
-					Details:    map[string]string{"post_id": postID.String()},
-				}
-				svc.On("LikePost", mock.Anything, postID).Return(err)
-			},
-		},
-		{
-			name:         "invalid UUID",
-			path:         "/posts/invalid/like",
-			postIDParam:  "invalid",
-			expectStatus: http.StatusBadRequest,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gin.SetMode(gin.TestMode)
-			w := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(w)
-
-			ctx.Request, _ = http.NewRequest(http.MethodPost, tt.path, nil)
-			ctx.Params = []gin.Param{{Key: "id", Value: tt.postIDParam}}
-
-			mockSvc := new(mockPostCommandService)
-			if tt.setupMocks != nil {
-				tt.setupMocks(mockSvc)
-			}
-
-			ctrl := NewPostCommandController(mockSvc)
-			ctrl.LikePost(ctx)
-
-			assert.Equal(t, tt.expectStatus, w.Code)
-
-			if tt.expectErrorCode != "" {
-				var resp map[string]interface{}
-				json.Unmarshal(w.Body.Bytes(), &resp)
-				assert.Equal(t, string(tt.expectErrorCode), resp["code"])
-			}
-		})
+func ResetOutbox(t *testing.T) {
+	ctx := context.Background()
+	_, err := testDB.ExecContext(ctx, "TRUNCATE TABLE event_outbox RESTART IDENTITY CASCADE")
+	if t != nil {
+		require.NoError(t, err)
+	} else if err != nil {
+		panic(err)
 	}
 }
-) + (name: Build and Push Post Service Image
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-concurrency:
-  group: post-service-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  IMAGE_NAME: post-service
-  REGISTRY: ghcr.io
-  GO_VERSION: "1.24"
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Enable Go modules
-        run: go env -w GO111MODULE=on
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      # FIXED: Clean module cache before downloading
-      - name: Clean module cache
-        run: go clean -modcache
-
-      - name: Download Go modules
-        run: go mod download
-
-      - name: Verify modules
-        run: go mod verify
-
-      - name: Debug Go env
-        run: |
-          go env
-          go list ./...
-
-      - name: Build
-        run: go build ./...
-
-      - name: Run go vet
-        run: go vet ./...
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.56.2
-          args: --timeout=5m
-
-      - name: Run tests with coverage
-        run: |
-          go test -v -coverprofile=coverage.out -covermode=atomic ./...
-        env:
-          TEST_DB_HOST: localhost
-          TEST_DB_PORT: 5433
-          TEST_DB_USER: testuser
-          TEST_DB_PASSWORD: testpass
-          TEST_DB_NAME: testdb
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.out
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            **/test-results/*.xml
-            **/coverage.out
-
-  build-and-push:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    permissions:
-      contents: read
-      packages: write
-      security-events: write
-      actions: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/post-service
-          tags: |
-            type=sha,format=long
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          load: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/post-service:sha-${{ github.sha }}
-          format: sarif
-          output: trivy.sarif
-          severity: CRITICAL,HIGH
-          github-pat: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: github.event_name == 'push'
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: trivy.sarif
-          category: trivy
-
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ghcr.io/${{ github.repository_owner }}/post-service:sha-${{ github.sha }}
-          format: spdx-json
-          output-file: sbom.spdx.json
-
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom
-          path: sbom.spdx.json) and are the one causing me issues?
+// GetTestDB returns the shared test database.
+func GetTestDB() *sql.DB {
+	return testDB
+}
+)

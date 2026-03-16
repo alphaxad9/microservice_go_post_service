@@ -174,11 +174,15 @@ func TestOutboxRepository_ConcurrentPolling(t *testing.T) {
 	// Simulate two concurrent consumers with separate transactions
 	tx1, err := testDB.BeginTx(ctx, nil)
 	require.NoError(t, err)
-	defer tx1.Rollback()
+	defer func() {
+		_ = tx1.Rollback()
+	}()
 
 	tx2, err := testDB.BeginTx(ctx, nil)
 	require.NoError(t, err)
-	defer tx2.Rollback()
+	defer func() {
+		_ = tx2.Rollback()
+	}()
 
 	repo1 := NewOutboxRepositoryTx(tx1)
 	events1, err := repo1.GetUnpublishedEvents(ctx, 2)
@@ -201,7 +205,6 @@ func TestOutboxRepository_ConcurrentPolling(t *testing.T) {
 	require.NoError(t, tx1.Commit())
 	require.NoError(t, tx2.Commit())
 }
-
 func TestOutboxRepository_Save(t *testing.T) {
 	resetOutbox(t)
 	repo := NewOutboxRepository(getTestDB())

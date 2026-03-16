@@ -1,4 +1,5 @@
-// post_service/internal/http/router.go
+next (  Error: post_service/internal/http/router.go:34:26: Error return value of `router.SetTrustedProxies` is not checked (errcheck)
+  	router.SetTrustedProxies(nil))(// post_service/internal/http/router.go
 package router
 
 import (
@@ -31,14 +32,7 @@ func NewRouter(
 
 func SetupRouter(cfg *config.Config, r *Router) *gin.Engine {
 	router := gin.Default()
-
-	// FIXED: Check error from SetTrustedProxies
-	if err := router.SetTrustedProxies(nil); err != nil {
-		// In a real application, you might want to panic or log fatally
-		// since this is a configuration issue during startup
-		panic("failed to set trusted proxies: " + err.Error())
-	}
-
+	router.SetTrustedProxies(nil)
 	router.Use(SetupCORS(cfg.FrontendURL))
 	verifier := auth.NewVerifier(
 		cfg.AuthPublicKeyURL,
@@ -99,3 +93,4 @@ func SetupRouter(cfg *config.Config, r *Router) *gin.Engine {
 
 	return router
 }
+)
