@@ -148,11 +148,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # FIXED: Use specific SHA tag for Trivy scan
+      # FIXED: Added sha- prefix to match the tag format from metadata
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/post-service:${{ github.sha }}
+          image-ref: ghcr.io/${{ github.repository_owner }}/post-service:sha-${{ github.sha }}
           format: sarif
           output: trivy.sarif
           severity: CRITICAL,HIGH
@@ -165,11 +165,11 @@ jobs:
           sarif_file: trivy.sarif
           category: trivy
 
-      # FIXED: Use specific SHA tag for SBOM generation
+      # FIXED2: Added sha- prefix to match the tag format from metadata
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ghcr.io/${{ github.repository_owner }}/post-service:${{ github.sha }}
+          image: ghcr.io/${{ github.repository_owner }}/post-service:sha-${{ github.sha }}
           format: spdx-json
           output-file: sbom.spdx.json
 
