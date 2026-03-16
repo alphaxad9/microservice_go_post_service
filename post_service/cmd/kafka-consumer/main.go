@@ -16,12 +16,15 @@ import (
 )
 
 func main() {
+	// Load environment variables from .env file FIRST
+	config.Load()
+
 	kafkaCfg := config.LoadKafkaConfig()
 
 	// Create in-memory event bus
 	eventBus := events.NewInMemoryEventBus()
 
-	// 👇 CRITICAL: Register your PostEventHandler
+	// CRITICAL: Register your PostEventHandler
 	postHandler := handlers.NewPostEventHandler(eventBus)
 	postHandler.RegisterSubscriptions() // ← THIS WAS MISSING!
 
