@@ -8,13 +8,14 @@ RUN apk add --no-cache \
     gcc \
     musl-dev \
     pkgconfig \
-    librdkafka-dev
+    librdkafka-dev \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
 # Copy dependency files first for better caching
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download && go mod verify
 
 # Copy the rest of the source code
 COPY post_service ./post_service
@@ -38,7 +39,6 @@ RUN go build -tags musl -ldflags="-w -s" \
     -o /app/bin/kafka-consumer \
     ./post_service/cmd/kafka-consumer
 
-
 # =========================
 # Stage 2: Runtime
 # =========================
@@ -46,11 +46,15 @@ FROM alpine:3.19
 
 WORKDIR /app
 
-# Install runtime libraries (librdkafka is required for the app to start)
+# Install runtime libraries and clean up
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
-    librdkafka
+    librdkafka \
+    && rm -rf /var/cache/apk/*
+
+# Set Gin to release mode for production
+ENV GIN_MODE=release
 
 # Security: Run as a non-privileged user
 RUN addgroup -g 1001 -S appuser && \
@@ -64,6 +68,10 @@ COPY --from=builder --chown=appuser:appuser /app/bin/kafka-consumer .
 USER appuser
 
 EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD ["./post-service", "health"]
 
 # Default command (you can override this in docker-compose for the other services)
 CMD ["./post-service"]

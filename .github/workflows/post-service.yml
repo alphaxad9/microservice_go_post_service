@@ -69,7 +69,6 @@ jobs:
       - name: Run go vet
         run: go vet ./...
 
-      # FIXED: Updated golangci-lint to latest version for Go 1.24 compatibility
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -149,10 +148,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # FIXED: Use specific SHA tag for Trivy scan
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ${{ steps.meta.outputs.tags }}
+          image-ref: ghcr.io/${{ github.repository_owner }}/post-service:${{ github.sha }}
           format: sarif
           output: trivy.sarif
           severity: CRITICAL,HIGH
@@ -165,10 +165,11 @@ jobs:
           sarif_file: trivy.sarif
           category: trivy
 
+      # FIXED: Use specific SHA tag for SBOM generation
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ steps.meta.outputs.tags }}
+          image: ghcr.io/${{ github.repository_owner }}/post-service:${{ github.sha }}
           format: spdx-json
           output-file: sbom.spdx.json
 
