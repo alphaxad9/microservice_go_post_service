@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+  labels:
+    app: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+    app.kubernetes.io/component: post-service
+data:
+  # Server Configuration
+  GIN_MODE: {{ .Values.config.server.ginMode | quote }}
+  PORT: {{ .Values.config.server.port | quote }}
+  FRONTEND_URL: {{ .Values.config.server.frontendUrl | quote }}
+  
+  # Database Configuration
+  POSTGRES_HOST: {{ .Values.config.postgres.host | quote }}
+  POSTGRES_PORT: {{ .Values.config.postgres.port | quote }}
+  POSTGRES_DB: {{ .Values.config.postgres.db | quote }}
+  POSTGRES_USER: {{ .Values.config.postgres.user | quote }}
+  
+  # Kafka Configuration
+  KAFKA_BROKERS: {{ .Values.config.kafka.brokers | quote }}
+  KAFKA_TOPIC: {{ .Values.config.kafka.topic | quote }}
+  KAFKA_GROUP_ID: {{ .Values.config.kafka.groupId | quote }}
+  KAFKA_SECURITY_PROTOCOL: {{ .Values.config.kafka.securityProtocol | quote }}
+  KAFKA_ENABLE_AUTO_COMMIT: {{ .Values.config.kafka.enableAutoCommit | quote }}
+  KAFKA_AUTO_OFFSET_RESET: {{ .Values.config.kafka.autoOffsetReset | quote }}
+  KAFKA_RETRIES: {{ .Values.config.kafka.retries | quote }}
+  KAFKA_POLL_TIMEOUT: {{ .Values.config.kafka.pollTimeout | quote }}
+  
+  # Auth Service Configuration
+  AUTH_PUBLIC_KEY_URL: {{ .Values.config.auth.publicKeyUrl | quote }}
+  AUTH_SERVICE_URL: {{ .Values.config.auth.serviceUrl | quote }}
+  AUTH_PUBLIC_KEY_TTL: {{ .Values.config.auth.publicKeyTTL | quote }}
+  

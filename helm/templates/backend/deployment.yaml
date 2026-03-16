@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+  labels:
+    app: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+    app.kubernetes.io/component: post-service
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | default "1.0.0" | quote }}
+    app.kubernetes.io/part-of: {{ .Chart.Name }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+        app.kubernetes.io/component: post-service
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "helm.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: post
+          image: "{{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.post.image.pullPolicy | default "IfNotPresent" }}
+          
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.post.port }}
+              protocol: TCP
+          
+          # Go service runs as a compiled binary
+          command: ["./post-service"]
+          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          startupProbe:
+            httpGet:
+              path: /health/
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          
+          # Environment variables from ConfigMap and Secrets
+          envFrom:
+            - configMapRef:
+                name: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+            - secretRef:
+                name: {{ .Values.secrets.postgres }}
+            - secretRef:
+                name: {{ .Values.secrets.kafka }}
+            - secretRef:
+                name: {{ .Values.secrets.auth }}
+            - secretRef:
+                name: {{ .Values.secrets.internal }}
+      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
