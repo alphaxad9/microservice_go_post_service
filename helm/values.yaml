@@ -39,7 +39,6 @@ config:
     retries: "5"
     pollTimeout: "1.0"
   
-  # Auth service configuration
   auth:
     publicKeyUrl: "http://auth-service:8000/zedvye_one/users/public_key/"
     serviceUrl: "http://auth-service:8000/zedvye_one"
@@ -90,7 +89,7 @@ backend:
 secrets:
   postgres: postgres-credentials
   kafka: kafka-credentials
-  payment: payment-credentials
+  post: post-credentials
 
 podAnnotations: {}
 

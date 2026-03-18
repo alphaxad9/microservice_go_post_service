@@ -1,0 +1,8 @@
+helm lint .
+kubectl create namespace post-service
+helm install post-service ./helm -n post-service
+or
+helm upgrade --install post-service ./helm -n post-service
+kubectl get pods -n post-service
+kubectl get svc -n post-service
+kubectl get deployments -n post-service

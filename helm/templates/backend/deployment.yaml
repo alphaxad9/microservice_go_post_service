@@ -86,9 +86,7 @@ spec:
             - secretRef:
                 name: {{ .Values.secrets.kafka }}
             - secretRef:
-                name: {{ .Values.secrets.auth }}
-            - secretRef:
-                name: {{ .Values.secrets.internal }}
+                name: {{ .Values.secrets.post }}
       
       {{- with .Values.nodeSelector }}
       nodeSelector:
