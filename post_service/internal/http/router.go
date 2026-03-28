@@ -39,7 +39,7 @@ func SetupRouter(cfg *config.Config, r *Router) *gin.Engine {
 		panic("failed to set trusted proxies: " + err.Error())
 	}
 
-	router.Use(SetupCORS(cfg.FrontendURL))
+	router.Use(SetupCORS(cfg.FrontendURLs))
 	verifier := auth.NewVerifier(
 		cfg.AuthPublicKeyURL,
 		time.Duration(cfg.AuthPublicKeyTTL)*time.Second,

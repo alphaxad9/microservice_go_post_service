@@ -36,9 +36,9 @@ type Config struct {
 	InternalAPIKey   string
 
 	// Server
-	FrontendURL string
-	Port        string
-	GinMode     string
+	FrontendURLs []string
+	Port         string
+	GinMode      string
 }
 
 func Load() *Config {
@@ -70,9 +70,9 @@ func Load() *Config {
 		InternalAPIKey:   getEnv("INTERNAL_API_KEY", ""),
 
 		// Server
-		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
-		Port:        getEnv("PORT", "8080"),
-		GinMode:     getEnv("GIN_MODE", "debug"),
+		FrontendURLs: getEnvAsSlice("FRONTEND_URL", []string{"http://localhost:3000"}),
+		Port:         getEnv("PORT", "8080"),
+		GinMode:      getEnv("GIN_MODE", "debug"),
 	}
 }
 

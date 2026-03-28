@@ -7,9 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupCORS(frontendURL string) gin.HandlerFunc {
+func SetupCORS(frontendURLs []string) gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowOrigins:     []string{frontendURL},
+		AllowOrigins:     frontendURLs,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
