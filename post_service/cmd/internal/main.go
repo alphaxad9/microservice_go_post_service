@@ -26,6 +26,11 @@ import (
 func main() {
 	cfg := config.Load()
 
+	// Validate required config at startup
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Configuration validation failed: %v", err)
+	}
+
 	// Set Gin mode from config
 	gin.SetMode(cfg.GinMode)
 

@@ -1,4 +1,3 @@
-// github.com/alphaxad9/my-go-backend/post_service/internal/config/kafka.go
 package config
 
 import (

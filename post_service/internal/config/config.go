@@ -77,6 +77,12 @@ func Load() *Config {
 }
 
 func loadEnvFile() {
+	// Check if running in Kubernetes
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+		log.Println("ℹ️ Running inside Kubernetes, skipping .env loading")
+		return
+	}
+
 	// Try current working directory
 	if err := godotenv.Load(); err == nil {
 		log.Println("✅ .env loaded from working directory")
@@ -106,7 +112,7 @@ func loadEnvFile() {
 		dir = parent
 	}
 
-	log.Println("⚠️  No .env file found, using system environment variables")
+	log.Println("ℹ️ No .env file found, using system environment variables")
 }
 
 // Helper: Get string env var with default
