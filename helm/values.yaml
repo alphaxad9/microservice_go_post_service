@@ -1,74 +1,86 @@
-replicaCount: 1
+# ============================================
+# POST SERVICE HELM CHART - COMPLETE VALUES
+# ============================================
 
-# image:
-#   repository: ghcr.io/alphaxad9/post-service
-#   pullPolicy: IfNotPresent
-#   # Overrides the image tag whose default is the chart appVersion.
-#   tag: "0.0.4"
-image:
-  repository: ghcr.io/alphaxad9/post-service  # ← Note: post-service (with hyphen), not post_service
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "sha-3522d92818f671c7d2be6a23164f01b1f1a23946"  # Use the actual SHA tag from your registry
-imagePullSecrets: []
-nameOverride: "post-service"
-fullnameOverride: "post-service"
+# Namespace configuration
+namespace: post-service
 
-serviceAccount:
-  create: true
-  automount: true
-  annotations: {}
-  name: "post-service"
+# Service configuration
+service:
+  name: post-service
+  port: 8080
 
-config:
-  # Database configuration
-  postgres:
-    host: "postgres.infrastructure.svc.cluster.local"
-    port: "5432"
-    db: "postgresgo1"
-    user: "ishimwe"
-    
-  # Kafka configuration
-  kafka:
-    brokers: "kafka.infrastructure.svc.cluster.local:9092,kafka.infrastructure.svc.cluster.local:9093"
-    topic: "microservice_one.events"
-    groupId: "post_service_outbox_publisher"
-    securityProtocol: "PLAINTEXT"
-    enableAutoCommit: "false"
-    autoOffsetReset: "earliest"
-    retries: "5"
-    pollTimeout: "1.0"
+# ConfigMap name (used by all deployments)
+configMap:
+  name: post-config
+
+# ============================================
+# DEPLOYMENTS CONFIGURATION
+# ============================================
+deployments:
+  api:
+    replicas: 1
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
   
-  auth:
-    publicKeyUrl: "http://auth-service:8000/zedvye_one/users/public_key/"
-    serviceUrl: "http://auth-service:8000/zedvye_one"
-    publicKeyTTL: "300"
+  consumer:
+    replicas: 1
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "250m"
   
-  # Server configuration
-  server:
-    ginMode: "release"  # Set to "release" for production
-    frontendUrl: "http://frontend-service:3000"
-    port: "8080"
-  
-  # Internal API
-  internalApiKey: "super-secret-internal-key-change-in-prod"
+  producer:
+    replicas: 1
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "250m"
 
+# ============================================
+# BACKEND CONFIGURATION
+# ============================================
 backend:
   post:
     image:
-      repository: ghcr.io/alphaxad9/post-service
-      tag: "sha-3522d92818f671c7d2be6a23164f01b1f1a23946"
+      repository: alphaxad9/post_service
+      apiTag: "0.0.7"
+      consumerTag: "0.0.5"
+      producerTag: "0.0.5"
+      pullPolicy: IfNotPresent
     port: 8080
+
+# ============================================
+# CONFIGURATION VALUES (for ConfigMap)
+# ============================================
+config:
+  post:
+    # Service Identity
+    serviceName: "post"
+    
+    # Server Configuration
+    ginMode: "debug"
+    frontendUrl: "http://localhost:3000,https://yourdomain.com,http://127.0.0.1:3000"
+    logLevel: "DEBUG"
     
     # Database
     postgresHost: "postgres.infrastructure.svc.cluster.local"
     postgresPort: "5432"
     postgresDb: "postgresgo1"
-    postgresUser: "ishimwe"
-    # Password comes from secrets
     
     # Kafka
-    kafkaBrokers: "kafka.infrastructure.svc.cluster.local:9092,kafka.infrastructure.svc.cluster.local:9093"
+    kafkaBrokers: "kafka-cluster-kafka-bootstrap.kafka-operator.svc.cluster.local:9092"
     kafkaTopic: "microservice_one.events"
     kafkaGroupId: "post_service_outbox_publisher"
     kafkaSecurityProtocol: "PLAINTEXT"
@@ -78,114 +90,93 @@ backend:
     kafkaPollTimeout: "1.0"
     
     # Auth Service
-    authPublicKeyUrl: "http://auth-service:8000/zedvye_one/users/public_key/"
-    authServiceUrl: "http://auth-service:8000/zedvye_one"
-    authPublicKeyTTL: "300"
+    authServiceUrl: "http://auth-service.auth-service.svc.cluster.local:8000/zedvye_one/"
+    authPublicKeyUrl: "http://auth-service.auth-service.svc.cluster.local:8000/zedvye_one/users/public_key/"
+    authPublicKeyTtl: "300"
     
-    # Server
-    ginMode: "release"
-    frontendUrl: "http://frontend-service:3000"
+    # Redis (placeholder - not used)
+    redisHost: "redis.infrastructure.svc.cluster.local"
+    redisPort: "6379"
+    redisDb: "0"
+    redisSocketTimeout: "2"
+    redisConnectTimeout: "2"
+    redisRetryOnTimeout: "true"
+    
+    # CORS Settings
+    corsAllowedOrigins: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://172.18.0.100"
+    csrfTrustedOrigins: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080,http://172.18.0.100"
+    corsAllowCredentials: "True"
 
+# ============================================
+# SECRETS CONFIGURATION
+# ============================================
 secrets:
+  # Secret resource names
+  post: post-secrets
   postgres: postgres-credentials
   kafka: kafka-credentials
-  post: post-credentials
+  rabbitmq: rabbitmq-credentials
+  redis: redis-credentials
+  
+  # Secret data values
+  data:
+    post:
+      jwtSecret: "my_jwt_secret_123!"
+      internalApiKey: "super-secret-internal-key-change-in-prod"
+    
+    postgres:
+      user: "ishimwe"
+      password: "2025New+"
+
+# ============================================
+# PERSISTENCE CONFIGURATION
+# ============================================
+persistence:
+  enabled: true
+  static:
+    size: 5Gi
+  media:
+    size: 10Gi
+
+# ============================================
+# INGRESS CONFIGURATION
+# ============================================
+ingress:
+  enabled: true
+  host: post.local
+
+# ============================================
+# SERVICE ACCOUNT CONFIGURATION
+# ============================================
+serviceAccount:
+  create: true
+  name: post-service-sa
+  automount: true
+  annotations: {}
+
+# ============================================
+# MISC CONFIGURATION
+# ============================================
+replicaCount: 1
 
 podAnnotations: {}
-
-podLabels:
-  app: post-service
-  service: post
+podLabels: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000
-
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
-service:
-  type: ClusterIP
-  port: 8080
-  targetPort: 8080
-  name: http
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: post-service.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-
-httpRoute:
-  enabled: false
-  annotations: {}
-  parentRefs:
-    - name: gateway
-      sectionName: http
-  hostnames:
-    - post-service.local
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 200m
-    memory: 256Mi
-
-livenessProbe:
-  httpGet:
-    path: /health/
-    port: 8080
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
-
-readinessProbe:
-  httpGet:
-    path: /health/
-    port: 8080
-  initialDelaySeconds: 15
-  periodSeconds: 5
-  timeoutSeconds: 3
-  failureThreshold: 3
-
-startupProbe:
-  httpGet:
-    path: /health/
-    port: 8080
-  failureThreshold: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-
+# Autoscaling
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 100
   targetCPUUtilizationPercentage: 80
-  targetMemoryUtilizationPercentage: 80
 
-volumes: []
-
-volumeMounts: []
-
+# Node configuration
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}
+
+# HTTPRoute (if using Gateway API)
+httpRoute:
+  enabled: false

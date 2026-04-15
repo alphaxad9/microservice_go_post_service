@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: post-producer
+  labels:
+    app: post-service
+    component: producer
+    managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.deployments.producer.replicas }}
+  selector:
+    matchLabels:
+      app: post-service
+      component: producer
+  template:
+    metadata:
+      labels:
+        app: post-service
+        component: producer
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+      - name: post-producer
+        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.producerTag }}
+        imagePullPolicy: {{ .Values.backend.post.image.pullPolicy }}
+        command: ["/app/outbox-publisher"]
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.configMap.name }}
+        - secretRef:
+            name: {{ .Values.secrets.post }}
+        - secretRef:
+            name: {{ .Values.secrets.postgres }}
+        - secretRef:
+            name: {{ .Values.secrets.kafka }}
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SERVICE_COMPONENT
+          value: "kafka-producer"
+        resources:
+          requests:
+            memory: {{ .Values.deployments.producer.resources.requests.memory }}
+            cpu: {{ .Values.deployments.producer.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.deployments.producer.resources.limits.memory }}
+            cpu: {{ .Values.deployments.producer.resources.limits.cpu }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001

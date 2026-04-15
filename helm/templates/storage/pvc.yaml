@@ -1,0 +1,29 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: post-service-static-pvc
+  labels:
+    app: post-service
+    managed-by: {{ .Release.Service }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.static.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: post-service-media-pvc
+  labels:
+    app: post-service
+    managed-by: {{ .Release.Service }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.media.size }}
+{{- end }}

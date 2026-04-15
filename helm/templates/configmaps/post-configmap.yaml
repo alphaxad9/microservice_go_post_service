@@ -1,34 +1,53 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+  name: {{ .Values.configMap.name }}
   labels:
-    app: {{ include "helm.appname" (dict "ctx" $ "svc" "post") }}
+    app: post-service
     app.kubernetes.io/component: post-service
 data:
+  # Service Identity
+  SERVICE_NAME: {{ .Values.config.post.serviceName | quote }}
+  DB_NAME: {{ .Values.config.post.postgresDb | quote }}
+  
   # Server Configuration
-  GIN_MODE: {{ .Values.config.server.ginMode | quote }}
-  PORT: {{ .Values.config.server.port | quote }}
-  FRONTEND_URL: {{ .Values.config.server.frontendUrl | quote }}
+  GIN_MODE: {{ .Values.config.post.ginMode | quote }}
+  PORT: {{ .Values.service.port | quote }}
+  FRONTEND_URL: {{ .Values.config.post.frontendUrl | quote }}
+  LOG_LEVEL: {{ .Values.config.post.logLevel | quote }}
   
-  # Database Configuration
-  POSTGRES_HOST: {{ .Values.config.postgres.host | quote }}
-  POSTGRES_PORT: {{ .Values.config.postgres.port | quote }}
-  POSTGRES_DB: {{ .Values.config.postgres.db | quote }}
-  POSTGRES_USER: {{ .Values.config.postgres.user | quote }}
+  # Database
+  POSTGRES_HOST: {{ .Values.config.post.postgresHost | quote }}
+  POSTGRES_PORT: {{ .Values.config.post.postgresPort | quote }}
+  POSTGRES_DB: {{ .Values.config.post.postgresDb | quote }}
+  POSTGRES_USER: {{ .Values.secrets.data.postgres.user | quote }}
+  DB_HOST: {{ .Values.config.post.postgresHost | quote }}
+  DB_PORT: {{ .Values.config.post.postgresPort | quote }}
   
-  # Kafka Configuration
-  KAFKA_BROKERS: {{ .Values.config.kafka.brokers | quote }}
-  KAFKA_TOPIC: {{ .Values.config.kafka.topic | quote }}
-  KAFKA_GROUP_ID: {{ .Values.config.kafka.groupId | quote }}
-  KAFKA_SECURITY_PROTOCOL: {{ .Values.config.kafka.securityProtocol | quote }}
-  KAFKA_ENABLE_AUTO_COMMIT: {{ .Values.config.kafka.enableAutoCommit | quote }}
-  KAFKA_AUTO_OFFSET_RESET: {{ .Values.config.kafka.autoOffsetReset | quote }}
-  KAFKA_RETRIES: {{ .Values.config.kafka.retries | quote }}
-  KAFKA_POLL_TIMEOUT: {{ .Values.config.kafka.pollTimeout | quote }}
+  # Kafka
+  KAFKA_BROKERS: {{ .Values.config.post.kafkaBrokers | quote }}
+  KAFKA_TOPIC: {{ .Values.config.post.kafkaTopic | quote }}
+  KAFKA_GROUP_ID: {{ .Values.config.post.kafkaGroupId | quote }}
+  KAFKA_SECURITY_PROTOCOL: {{ .Values.config.post.kafkaSecurityProtocol | quote }}
+  KAFKA_ENABLE_AUTO_COMMIT: {{ .Values.config.post.kafkaEnableAutoCommit | quote }}
+  KAFKA_AUTO_OFFSET_RESET: {{ .Values.config.post.kafkaAutoOffsetReset | quote }}
+  KAFKA_RETRIES: {{ .Values.config.post.kafkaRetries | quote }}
+  KAFKA_POLL_TIMEOUT: {{ .Values.config.post.kafkaPollTimeout | quote }}
   
-  # Auth Service Configuration
-  AUTH_PUBLIC_KEY_URL: {{ .Values.config.auth.publicKeyUrl | quote }}
-  AUTH_SERVICE_URL: {{ .Values.config.auth.serviceUrl | quote }}
-  AUTH_PUBLIC_KEY_TTL: {{ .Values.config.auth.publicKeyTTL | quote }}
+  # Auth Service
+  AUTH_SERVICE_URL: {{ .Values.config.post.authServiceUrl | quote }}
+  AUTH_PUBLIC_KEY_URL: {{ .Values.config.post.authPublicKeyUrl | quote }}
+  AUTH_PUBLIC_KEY_TTL: {{ .Values.config.post.authPublicKeyTtl | quote }}
   
+  # Redis
+  REDIS_HOST: {{ .Values.config.post.redisHost | quote }}
+  REDIS_PORT: {{ .Values.config.post.redisPort | quote }}
+  REDIS_DB: {{ .Values.config.post.redisDb | quote }}
+  REDIS_SOCKET_TIMEOUT: {{ .Values.config.post.redisSocketTimeout | quote }}
+  REDIS_CONNECT_TIMEOUT: {{ .Values.config.post.redisConnectTimeout | quote }}
+  REDIS_RETRY_ON_TIMEOUT: {{ .Values.config.post.redisRetryOnTimeout | quote }}
+  
+  # CORS
+  CORS_ALLOWED_ORIGINS: {{ .Values.config.post.corsAllowedOrigins | quote }}
+  CSRF_TRUSTED_ORIGINS: {{ .Values.config.post.csrfTrustedOrigins | quote }}
+  CORS_ALLOW_CREDENTIALS: {{ .Values.config.post.corsAllowCredentials | quote }}

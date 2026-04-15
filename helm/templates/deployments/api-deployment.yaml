@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: post-api
+  labels:
+    app: post-service
+    component: api
+    managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.deployments.api.replicas }}
+  selector:
+    matchLabels:
+      app: post-service
+      component: api
+  template:
+    metadata:
+      labels:
+        app: post-service
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+      - name: post-api
+        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.apiTag }}
+        imagePullPolicy: {{ .Values.backend.post.image.pullPolicy }}
+        ports:
+        - containerPort: 8080
+          name: http
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.configMap.name }}
+        - secretRef:
+            name: {{ .Values.secrets.post }}
+        - secretRef:
+            name: {{ .Values.secrets.postgres }}
+        - secretRef:
+            name: {{ .Values.secrets.kafka }}
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            memory: {{ .Values.deployments.api.resources.requests.memory }}
+            cpu: {{ .Values.deployments.api.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.deployments.api.resources.limits.memory }}
+            cpu: {{ .Values.deployments.api.resources.limits.cpu }}
+        livenessProbe:
+          httpGet:
+            path: /health/
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        startupProbe:
+          httpGet:
+            path: /health/
+            port: http
+          failureThreshold: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001

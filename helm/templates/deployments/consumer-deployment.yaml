@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: post-consumer
+  labels:
+    app: post-service
+    component: consumer
+    managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.deployments.consumer.replicas }}
+  selector:
+    matchLabels:
+      app: post-service
+      component: consumer
+  template:
+    metadata:
+      labels:
+        app: post-service
+        component: consumer
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+      - name: post-consumer
+        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.consumerTag }}
+        imagePullPolicy: {{ .Values.backend.post.image.pullPolicy }}
+        command: ["/app/kafka-consumer"]
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.configMap.name }}
+        - secretRef:
+            name: {{ .Values.secrets.post }}
+        - secretRef:
+            name: {{ .Values.secrets.postgres }}
+        - secretRef:
+            name: {{ .Values.secrets.kafka }}
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SERVICE_COMPONENT
+          value: "kafka-consumer"
+        resources:
+          requests:
+            memory: {{ .Values.deployments.consumer.resources.requests.memory }}
+            cpu: {{ .Values.deployments.consumer.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.deployments.consumer.resources.limits.memory }}
+            cpu: {{ .Values.deployments.consumer.resources.limits.cpu }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
