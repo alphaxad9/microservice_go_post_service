@@ -55,9 +55,7 @@ backend:
   post:
     image:
       repository: alphaxad9/post_service
-      apiTag: "0.0.7"
-      consumerTag: "0.0.5"
-      producerTag: "0.0.5"
+      tag: "0.0.6"
       pullPolicy: IfNotPresent
     port: 8080
 
