@@ -21,7 +21,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
       - name: post-consumer
-        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.consumerTag }}
+        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.tag }}
         imagePullPolicy: {{ .Values.backend.post.image.pullPolicy }}
         command: ["/app/kafka-consumer"]
         envFrom:

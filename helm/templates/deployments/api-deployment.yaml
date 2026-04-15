@@ -25,7 +25,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
       - name: post-api
-        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.apiTag }}
+        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.tag }}
         imagePullPolicy: {{ .Values.backend.post.image.pullPolicy }}
         ports:
         - containerPort: 8080

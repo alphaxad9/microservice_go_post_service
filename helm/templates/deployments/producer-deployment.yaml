@@ -21,7 +21,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
       - name: post-producer
-        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.producerTag }}
+        image: {{ .Values.backend.post.image.repository }}:{{ .Values.backend.post.image.tag }}
         imagePullPolicy: {{ .Values.backend.post.image.pullPolicy }}
         command: ["/app/outbox-publisher"]
         envFrom:
